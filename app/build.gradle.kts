@@ -1,10 +1,11 @@
 plugins {
     alias(libs.plugins.android.application)
+    id("com.google.gms.google-services")
 }
 
 android {
     namespace = "com.project.wishify"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.project.wishify"
