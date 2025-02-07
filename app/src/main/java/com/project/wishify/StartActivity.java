@@ -25,12 +25,12 @@ public class StartActivity extends AppCompatActivity {
             }
         });
 
-//        signup.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                Intent intent = new Intent(StartActivity.this, SignupActivity.class);
-//                startActivity(intent);
-//            }
-//        });
+        signup.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(StartActivity.this, SignupActivity.class);
+                startActivity(intent);
+            }
+        });
     }
 }
