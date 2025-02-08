@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "188995954759",
+    "project_id": "wishify-f871e",
+    "storage_bucket": "wishify-f871e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:188995954759:android:f937be8414c28d862ba962",
+        "android_client_info": {
+          "package_name": "com.project.wishify"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRg2np3egk6lzJ3SHnbGWKxEI27l0R_xM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
