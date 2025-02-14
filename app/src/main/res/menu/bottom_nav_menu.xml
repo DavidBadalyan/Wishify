@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@drawable/house_chimney"
+        android:title="Home" />
+    <item
+        android:id="@+id/nav_contacts"
+        android:icon="@drawable/users"
+        android:title="Contacts" />
+
+
+    <item
+        android:id="@+id/nav_calendar"
+        android:icon="@drawable/calendar"
+        android:title="Calendar"/>
+
+    <item
+        android:id="@+id/nav_gift"
+        android:icon="@drawable/gift_sug"
+        android:title="Gifts"/>
+
+</menu>

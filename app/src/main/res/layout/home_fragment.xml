@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/birthdayCard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="6dp"
+        android:layout_margin="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="UPCOMING BIRTHDAYS"
+                android:textSize="40dp"
+                android:textStyle="bold"
+                android:textColor="#127C98"
+                android:padding="12dp"
+                android:paddingBottom="12dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingVertical="8dp">
+
+                    <TextView
+                        android:id="@+id/person1Name"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="John Doe"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/black"/>
+
+                    <TextView
+                        android:id="@+id/birthday1Date"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Feb 20"
+                        android:textSize="16sp"
+                        android:textColor="@android:color/darker_gray"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@android:color/holo_red_dark"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingVertical="8dp">
+
+                    <TextView
+                        android:id="@+id/person2Name"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Michael Armstrong"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/black"/>
+
+                    <TextView
+                        android:id="@+id/birthday2Date"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Mar 3"
+                        android:textSize="16sp"
+                        android:textColor="@android:color/darker_gray"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@android:color/holo_red_dark"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingVertical="8dp">
+
+                    <TextView
+                        android:id="@+id/person3Name"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Emma Watson"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/black"/>
+
+                    <TextView
+                        android:id="@+id/birthday3Date"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Apr 15"
+                        android:textSize="16sp"
+                        android:textColor="@android:color/darker_gray"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@android:color/holo_red_dark"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingVertical="8dp">
+
+                    <TextView
+                        android:id="@+id/person4Name"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Sophia Lee"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/black"/>
+
+                    <TextView
+                        android:id="@+id/birthday4Date"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="May 8"
+                        android:textSize="16sp"
+                        android:textColor="@android:color/darker_gray"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@android:color/holo_red_dark"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingVertical="8dp">
+
+                    <TextView
+                        android:id="@+id/person5Name"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="David Kim"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/black"/>
+
+                    <TextView
+                        android:id="@+id/birthday5Date"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Jun 12"
+                        android:textSize="16sp"
+                        android:textColor="@android:color/darker_gray"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@android:color/holo_red_dark"/>
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/remindMeButton"
+        android:layout_width="0dp"
+        android:layout_height="60dp"
+        android:textAllCaps="false"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/white_outline_btn"
+        android:backgroundTint="@null"
+        android:text="Remind Me"
+        android:textAlignment="textStart"
+        android:textColor="#FFFFFF"
+        android:textSize="20dp"
+        android:drawableStart="@drawable/bell"
+        android:drawablePadding="18dp"
+        android:paddingStart="20dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/birthdayCard"
+        app:layout_constraintEnd_toEndOf="@+id/birthdayCard"
+        app:layout_constraintTop_toBottomOf="@+id/birthdayCard" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/customizeButton"
+        android:layout_width="0dp"
+        android:layout_height="60dp"
+        android:textAllCaps="false"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/white_outline_btn"
+        android:backgroundTint="@null"
+        android:text="Customize Messages"
+        android:textAlignment="textStart"
+        android:textColor="#FFFFFF"
+        android:textSize="20dp"
+        android:drawableStart="@drawable/pencil"
+        android:drawablePadding="18dp"
+        android:paddingStart="20dp"
+        app:layout_constraintStart_toStartOf="@+id/birthdayCard"
+        app:layout_constraintEnd_toEndOf="@+id/birthdayCard"
+        app:layout_constraintTop_toBottomOf="@+id/remindMeButton" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

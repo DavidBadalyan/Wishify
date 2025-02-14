@@ -1,5 +1,6 @@
 package com.project.wishify;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -47,6 +48,9 @@ public class SignupActivity extends AppCompatActivity {
             } else {
                 Toast.makeText(this, "Please enter email and password", Toast.LENGTH_SHORT).show();
             }
+
+            Intent intent = new Intent(SignupActivity.this, MainActivity.class);
+            startActivity(intent);
         });
     }
 
