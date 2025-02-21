@@ -1,4 +1,4 @@
-package com.project.wishify;
+package com.project.wishify.fragments;
 
 import androidx.fragment.app.Fragment;
 
