@@ -9,7 +9,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -26,6 +25,7 @@ import com.project.wishify.classes.Birthday;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -33,8 +33,6 @@ import java.util.List;
 import java.util.Locale;
 
 public class HomeFragment extends Fragment {
-
-
     private RecyclerView recyclerView;
     private BirthdayAdapter adapter;
     private List<Birthday> birthdayList;
@@ -47,23 +45,27 @@ public class HomeFragment extends Fragment {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 birthdayList.clear();
+                Calendar today = Calendar.getInstance();
+                today.setTime(new Date());
+
+                List<Birthday> allBirthdays = new ArrayList<>();
 
                 for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
                     Birthday birthday = dataSnapshot.getValue(Birthday.class);
                     if (birthday != null) {
-                        birthdayList.add(birthday);
+                        allBirthdays.add(birthday);
                     }
                 }
 
-                Log.d(TAG, "Fetched birthdays: " + birthdayList.size());
-
-                Collections.sort(birthdayList, new Comparator<Birthday>() {
+                Collections.sort(allBirthdays, new Comparator<Birthday>() {
                     @Override
                     public int compare(Birthday b1, Birthday b2) {
-                        return parseDate(b1.getDate()).compareTo(parseDate(b2.getDate()));
+                        return compareDates(b1.getDate(), b2.getDate(), today);
                     }
                 });
 
+                birthdayList.addAll(allBirthdays.subList(0, Math.min(7, allBirthdays.size())));
+                Log.d(TAG, "Fetched and filtered birthdays: " + birthdayList.size());
                 adapter.notifyDataSetChanged();
             }
 
@@ -74,14 +76,36 @@ public class HomeFragment extends Fragment {
         });
     }
 
-
-    private Date parseDate(String dateString) {
+    private int compareDates(String date1, String date2, Calendar today) {
         SimpleDateFormat sdf = new SimpleDateFormat("MM-dd", Locale.getDefault());
+
         try {
-            return sdf.parse(dateString);
+            Calendar cal1 = Calendar.getInstance();
+            Calendar cal2 = Calendar.getInstance();
+
+            Date d1 = sdf.parse(date1);
+            Date d2 = sdf.parse(date2);
+
+            cal1.setTime(d1);
+            cal2.setTime(d2);
+
+            int currentYear = today.get(Calendar.YEAR);
+            cal1.set(Calendar.YEAR, currentYear);
+            cal2.set(Calendar.YEAR, currentYear);
+
+            if (cal1.before(today) && !(today.get(Calendar.MONTH) == cal1.get(Calendar.MONTH)
+                    && today.get(Calendar.DAY_OF_MONTH) == cal1.get(Calendar.DAY_OF_MONTH))) {
+                cal1.add(Calendar.YEAR, 1);
+            }
+            if (cal2.before(today) && !(today.get(Calendar.MONTH) == cal2.get(Calendar.MONTH)
+                    && today.get(Calendar.DAY_OF_MONTH) == cal2.get(Calendar.DAY_OF_MONTH))) {
+                cal2.add(Calendar.YEAR, 1);
+            }
+
+            return cal1.compareTo(cal2);
         } catch (ParseException e) {
             e.printStackTrace();
-            return new Date();
+            return 0;
         }
     }
 
@@ -100,6 +124,4 @@ public class HomeFragment extends Fragment {
 
         return rootView;
     }
-
-
 }

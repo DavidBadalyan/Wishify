@@ -1,0 +1,58 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <LinearLayout
+            android:id="@+id/birthday_list_container"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="16dp"
+            android:orientation="horizontal">
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/remindBd"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/red_circle_button"
+                android:drawableTint="@android:color/white"
+                android:drawableStart="@drawable/bell"
+                android:padding="7dp"
+                android:gravity="center"
+                android:layout_marginEnd="10dp"/>
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/red_circle_button"
+                android:drawableTint="@android:color/white"
+                android:drawableStart="@drawable/pencil"
+                android:padding="7dp"
+                android:gravity="center"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="7dp"
+        android:background="#EB9D9D"/>
+
+</LinearLayout>
