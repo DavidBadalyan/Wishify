@@ -75,28 +75,28 @@
         android:textColorHint="#FFFFFF"
         android:textSize="16sp" />
 
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="80dp"
-        android:layout_marginHorizontal="20dp">
+<!--    <LinearLayout-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:orientation="horizontal"-->
+<!--        android:layout_marginTop="80dp"-->
+<!--        android:layout_marginHorizontal="20dp">-->
 
-        <CheckBox
-            android:id="@+id/rRememberMeCheckBox"
-            android:layout_width="30dp"
-            android:layout_height="20dp"
-            android:buttonTint="@color/white" />
+<!--        <CheckBox-->
+<!--            android:id="@+id/rRememberMeCheckBox"-->
+<!--            android:layout_width="30dp"-->
+<!--            android:layout_height="20dp"-->
+<!--            android:buttonTint="@color/white" />-->
 
-        <TextView
-            android:id="@+id/rememberMeText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Remember Me"
-            android:textColor="@color/white"
-            android:textSize="20sp"
-            android:layout_marginStart="10dp"/>
-    </LinearLayout>
+<!--        <TextView-->
+<!--            android:id="@+id/rememberMeText"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="Remember Me"-->
+<!--            android:textColor="@color/white"-->
+<!--            android:textSize="20sp"-->
+<!--            android:layout_marginStart="10dp"/>-->
+<!--    </LinearLayout>-->
 
 
     <androidx.appcompat.widget.AppCompatButton

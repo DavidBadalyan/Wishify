@@ -2,6 +2,7 @@ package com.project.wishify.adapters;
 
 import static android.content.ContentValues.TAG;
 
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -55,6 +56,7 @@ public class BirthdayAdapter extends RecyclerView.Adapter<BirthdayAdapter.Birthd
         tvName.setText(birthday.getName());
         tvName.setTextSize(18);
         tvName.setTypeface(Typeface.DEFAULT_BOLD);
+        tvName.setTextColor(Color.BLACK);
 
         TextView tvDate = new TextView(holder.itemView.getContext());
         tvDate.setLayoutParams(new LinearLayout.LayoutParams(
