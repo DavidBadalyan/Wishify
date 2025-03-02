@@ -1,99 +1,142 @@
 package com.project.wishify.activities;
 
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.fragment.app.Fragment;
+import androidx.core.view.GravityCompat;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.project.wishify.R;
 import com.project.wishify.fragments.CalendarFragment;
 import com.project.wishify.fragments.ContactsFragment;
-import com.project.wishify.fragments.GiftFragment;
 import com.project.wishify.fragments.HomeFragment;
-import com.project.wishify.R;
 
 public class MainActivity extends AppCompatActivity {
 
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private AppCompatButton settingsButton;
+    private FirebaseAuth auth;
+    private static final String TAG = "MainActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        try {
+            FirebaseApp.initializeApp(this);
+            auth = FirebaseAuth.getInstance();
 
-        drawerLayout = findViewById(R.id.drawer_layout);
-        navigationView = findViewById(R.id.nav_view);
-        settingsButton = findViewById(R.id.settingsButton);
+            setContentView(R.layout.activity_main);
+            Log.d(TAG, "Layout set: activity_main");
 
-        settingsButton.setOnClickListener(v -> {
-            drawerLayout.openDrawer(navigationView);
-        });
+            drawerLayout = findViewById(R.id.drawer_layout);
+            navigationView = findViewById(R.id.nav_view);
+            settingsButton = findViewById(R.id.settingsButton);
+            Log.d(TAG, "Views initialized: drawerLayout, navigationView, settingsButton");
 
-        navigationView.setNavigationItemSelectedListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.nav_profile) {
-                Toast.makeText(this, "Profile selected", Toast.LENGTH_SHORT).show();
-            } else if (id == R.id.nav_settings) {
-                Toast.makeText(this, "Settings selected", Toast.LENGTH_SHORT).show();
-            } else if (id == R.id.nav_about) {
-                Toast.makeText(this, "About selected", Toast.LENGTH_SHORT).show();
-            } else if (id == R.id.nav_logout) {
-                FirebaseAuth.getInstance().signOut();
-                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-                finish();
-            }
-            drawerLayout.closeDrawer(navigationView);
-            return true;
-        });
-
-        BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_nav);
-
-        if (savedInstanceState == null) {
-            getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, new HomeFragment())
-                    .commit();
-        }
-
-        bottomNavigationView.setOnItemSelectedListener(item -> {
-            Fragment selectedFragment = null;
-
-            if (item.getItemId() == R.id.nav_home) {
-                selectedFragment = new HomeFragment();
-            } else if (item.getItemId() == R.id.nav_contacts) {
-                selectedFragment = new ContactsFragment();
-            } else if (item.getItemId() == R.id.nav_calendar) {
-                selectedFragment = new CalendarFragment();
-            } else if (item.getItemId() == R.id.nav_gift) {
-                selectedFragment = new GiftFragment();
+            FirebaseUser currentUser = auth.getCurrentUser();
+            if (currentUser == null) {
+                Log.d(TAG, "No user signed in, redirecting to LoginActivity");
+                goToLoginActivity();
+                return;
             }
 
-            if (selectedFragment != null) {
+            Log.d(TAG, "User signed in: " + currentUser.getEmail());
+            TextView emailTextView = navigationView.getHeaderView(0).findViewById(R.id.nav_header_email);
+            emailTextView.setText(currentUser.getEmail());
+            TextView nameTextView = navigationView.getHeaderView(0).findViewById(R.id.nav_header_name);
+            nameTextView.setText(currentUser.getDisplayName() != null ? currentUser.getDisplayName() : "User");
+
+            settingsButton.setOnClickListener(v -> {
+                Log.d(TAG, "Settings button clicked, opening drawer");
+                drawerLayout.openDrawer(GravityCompat.END);
+            });
+
+            navigationView.setNavigationItemSelectedListener(item -> {
+                int id = item.getItemId();
+                if (id == R.id.nav_profile) {
+                    Log.d(TAG, "Starting ProfileActivity");
+                    Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
+                    startActivity(intent);
+                } else if (id == R.id.nav_settings) {
+                    Toast.makeText(this, "Settings selected", Toast.LENGTH_SHORT).show();
+                } else if (id == R.id.nav_about) {
+                    Toast.makeText(this, "About selected", Toast.LENGTH_SHORT).show();
+                } else if (id == R.id.nav_logout) {
+                    try {
+                        Log.d(TAG, "Logging out user");
+                        auth.signOut();
+                        goToLoginActivity();
+                    } catch (Exception e) {
+                        Toast.makeText(this, "Logout failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        e.printStackTrace();
+                    }
+                }
+                drawerLayout.closeDrawer(GravityCompat.END);
+                return true;
+            });
+
+            BottomNavigationView bottomNav = findViewById(R.id.bottom_nav);
+            bottomNav.setOnItemSelectedListener(item -> {
+                int id = item.getItemId();
+                if (id == R.id.nav_home) {
+                    Log.d(TAG, "Navigating to HomeFragment");
+                    getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, new HomeFragment())
+                            .commit();
+                    return true;
+                } else if (id == R.id.nav_calendar) {
+                    Log.d(TAG, "Navigating to CalendarFragment");
+                    getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, new CalendarFragment())
+                            .commit();
+                    return true;
+                } else if (id == R.id.nav_contacts) {
+                    Log.d(TAG, "Navigating to ContactsFragment");
+                    getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, new ContactsFragment())
+                            .commit();
+                    return true;
+                } else if (id == R.id.nav_gift) {
+                    Toast.makeText(this, "Gifts selected", Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+                return false;
+            });
+
+            if (savedInstanceState == null) {
+                Log.d(TAG, "Initial navigation to HomeFragment");
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, selectedFragment)
+                        .replace(R.id.fragment_container, new HomeFragment())
                         .commit();
+                bottomNav.setSelectedItemId(R.id.nav_home);
             }
-            return true;
-        });
-
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_CONTACTS)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{android.Manifest.permission.READ_CONTACTS}, 1);
+        } catch (Exception e) {
+            Log.e(TAG, "Crash in onCreate: " + e.getMessage(), e);
+            Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            goToLoginActivity();
         }
-
     }
 
+    private void goToLoginActivity() {
+        try {
+            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to start LoginActivity: " + e.getMessage(), e);
+            Toast.makeText(this, "Failed to start LoginActivity: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
 }

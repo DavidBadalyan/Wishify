@@ -7,7 +7,6 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -33,22 +32,48 @@ import com.project.wishify.receivers.BirthdayReminderReceiver;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
 public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.ContactsViewHolder> {
 
-    private List<Birthday> birthdayList;
+    private List<Birthday> originalBirthdayList;
+    private List<Birthday> filteredBirthdayList;
     private ContactsViewHolder holder;
     private int position;
     private static final String PREFS_NAME = "BirthdayReminders";
     private static final String REMINDER_KEY = "reminder_";
     private DatabaseReference databaseReference;
 
-    public ContactsAdapter(List<Birthday> birthdayList) {
-        this.birthdayList = birthdayList;
+    public ContactsAdapter() {
+        this.originalBirthdayList = new ArrayList<>();
+        this.filteredBirthdayList = new ArrayList<>();
         databaseReference = FirebaseDatabase.getInstance().getReference("birthdays");
+    }
+
+    public void updateList(List<Birthday> newList) {
+        originalBirthdayList.clear();
+        originalBirthdayList.addAll(newList);
+        filteredBirthdayList.clear();
+        filteredBirthdayList.addAll(newList);
+        notifyDataSetChanged();
+    }
+
+    public void filter(String query) {
+        filteredBirthdayList.clear();
+        if (query.isEmpty()) {
+            filteredBirthdayList.addAll(originalBirthdayList);
+        } else {
+            String searchQuery = query.toLowerCase(Locale.getDefault());
+            for (Birthday birthday : originalBirthdayList) {
+                if (birthday.getName().toLowerCase(Locale.getDefault()).contains(searchQuery)) {
+                    filteredBirthdayList.add(birthday);
+                }
+            }
+        }
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -60,11 +85,11 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
 
     @Override
     public void onBindViewHolder(@NonNull ContactsViewHolder holder, int position) {
-        Log.d(TAG, "Binding data for position " + position + ": " + birthdayList.get(position).getName());
+        Log.d(TAG, "Binding data for position " + position + ": " + filteredBirthdayList.get(position).getName());
 
         holder.birthdayListContainer.removeAllViews();
 
-        Birthday birthday = birthdayList.get(position);
+        Birthday birthday = filteredBirthdayList.get(position);
         LinearLayout birthdayRow = new LinearLayout(holder.itemView.getContext());
         birthdayRow.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -74,9 +99,9 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
         tvName.setLayoutParams(new LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         tvName.setText(birthday.getName());
+        tvName.setTextColor(0xFF000000); // Set text color to black
         tvName.setTextSize(18);
         tvName.setTypeface(Typeface.DEFAULT_BOLD);
-        tvName.setTextColor(Color.BLACK);
 
         TextView tvDate = new TextView(holder.itemView.getContext());
         tvDate.setLayoutParams(new LinearLayout.LayoutParams(
@@ -201,7 +226,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
 
     @Override
     public int getItemCount() {
-        return birthdayList.size();
+        return filteredBirthdayList.size();
     }
 
     static class ContactsViewHolder extends RecyclerView.ViewHolder {

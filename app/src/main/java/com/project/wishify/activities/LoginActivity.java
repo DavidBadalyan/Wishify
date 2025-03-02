@@ -1,10 +1,8 @@
 package com.project.wishify.activities;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -16,8 +14,6 @@ import com.project.wishify.R;
 public class LoginActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
-    private CheckBox checkBox;
-    private SharedPreferences sharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,15 +25,12 @@ public class LoginActivity extends AppCompatActivity {
         EditText email = findViewById(R.id.emailET);
         EditText password = findViewById(R.id.passwordET);
         Button login = findViewById(R.id.loginButton);
-        checkBox = findViewById(R.id.rememberMeCheckBox);
+        Button goToReg = findViewById(R.id.goToRegister);
 
-        sharedPreferences = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
-        boolean isRemembered = sharedPreferences.getBoolean("rememberMe", false);
-
-        if (isRemembered) {
-            startActivity(new Intent(LoginActivity.this, MainActivity.class));
-            finish();
-        }
+        goToReg.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, SignupActivity.class);
+            startActivity(intent);
+        });
 
         login.setOnClickListener(v -> {
             String emailStr = email.getText().toString().trim();
@@ -56,17 +49,6 @@ public class LoginActivity extends AppCompatActivity {
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
                         Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
-                        SharedPreferences.Editor editor = sharedPreferences.edit();
-
-                        if (checkBox.isChecked()) {
-                            editor.putBoolean("rememberMe", true);
-                            editor.putString("email", emailStr);
-                        } else {
-                            editor.clear();
-                        }
-
-                        editor.apply();
-
                         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                         startActivity(intent);
                         finish();

@@ -7,8 +7,10 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AutoCompleteTextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -59,7 +61,7 @@ public class ContactsFragment extends Fragment {
 
                 birthdayList.addAll(allBirthdays);
                 Log.d(TAG, "Fetched and filtered birthdays: " + birthdayList.size());
-                adapter.notifyDataSetChanged();
+                adapter.updateList(birthdayList);
             }
 
             @Override
@@ -77,8 +79,25 @@ public class ContactsFragment extends Fragment {
         recyclerView = rootView.findViewById(R.id.recyclerView_birthdays);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         birthdayList = new ArrayList<>();
-        adapter = new ContactsAdapter(birthdayList);
+        adapter = new ContactsAdapter();
         recyclerView.setAdapter(adapter);
+
+        SearchView searchView = rootView.findViewById(R.id.searchView);
+        AutoCompleteTextView searchAutoComplete = searchView.findViewById(androidx.appcompat.R.id.search_src_text);
+        searchAutoComplete.setBackgroundResource(R.drawable.rounded_search_background);
+
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                adapter.filter(newText);
+                return true;
+            }
+        });
 
         fetchBirthdays();
 
