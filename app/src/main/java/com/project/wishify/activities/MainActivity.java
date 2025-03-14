@@ -69,9 +69,13 @@ public class MainActivity extends AppCompatActivity {
                     Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
                     startActivity(intent);
                 } else if (id == R.id.nav_settings) {
-                    Toast.makeText(this, "Settings selected", Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, "Starting SettingsActivity");
+                    Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+                    startActivity(intent);
                 } else if (id == R.id.nav_about) {
-                    Toast.makeText(this, "About selected", Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, "Starting AboutActivity");
+                    Intent intent = new Intent(MainActivity.this, AboutActivity.class);
+                    startActivity(intent);
                 } else if (id == R.id.nav_logout) {
                     try {
                         Log.d(TAG, "Logging out user");
