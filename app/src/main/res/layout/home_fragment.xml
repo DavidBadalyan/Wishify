@@ -4,8 +4,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-
-
     <TextView
         android:id="@+id/upcoming"
         android:layout_width="wrap_content"
@@ -15,26 +13,33 @@
         android:textSize="25dp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="16dp" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView_birthdays"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="8dp"
         android:layout_marginTop="20dp"
+        android:layout_marginEnd="8dp"
         android:background="@drawable/card_background"
         android:paddingBottom="8dp"
+        android:scrollbars="vertical"
+        app:layout_constraintBottom_toTopOf="@id/remindMeButton"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/upcoming" />
+        app:layout_constraintTop_toBottomOf="@id/upcoming"
+        app:layout_constraintHeight_max="400dp" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/remindMeButton"
         android:layout_width="0dp"
         android:layout_height="60dp"
-        android:layout_marginTop="36dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
         android:background="@drawable/white_outline_btn"
         android:backgroundTint="@null"
         android:drawableStart="@drawable/bell"
@@ -45,17 +50,17 @@
         android:textAllCaps="false"
         android:textColor="#FFFFFF"
         android:textSize="20dp"
-        app:layout_constraintEnd_toEndOf="@+id/recyclerView_birthdays"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@+id/recyclerView_birthdays"
-        app:layout_constraintTop_toBottomOf="@+id/recyclerView_birthdays" />
+        app:layout_constraintBottom_toTopOf="@id/customizeButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/customizeButton"
         android:layout_width="0dp"
         android:layout_height="60dp"
-        android:textAllCaps="false"
-        android:layout_marginTop="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
         android:background="@drawable/white_outline_btn"
         android:backgroundTint="@null"
         android:text="Customize Messages"
@@ -65,9 +70,9 @@
         android:drawableStart="@drawable/pencil"
         android:drawablePadding="18dp"
         android:paddingStart="20dp"
-        app:layout_constraintStart_toStartOf="@+id/recyclerView_birthdays"
-        app:layout_constraintEnd_toEndOf="@+id/recyclerView_birthdays"
-        app:layout_constraintTop_toBottomOf="@+id/remindMeButton" />
-
+        android:textAllCaps="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

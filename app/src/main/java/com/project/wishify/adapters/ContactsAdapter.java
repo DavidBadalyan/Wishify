@@ -41,39 +41,55 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
 
     private List<Birthday> originalBirthdayList;
     private List<Birthday> filteredBirthdayList;
-    private ContactsViewHolder holder;
-    private int position;
     private static final String PREFS_NAME = "BirthdayReminders";
     private static final String REMINDER_KEY = "reminder_";
     private DatabaseReference databaseReference;
+    private int selectedPosition = -1;
+    private Context context;
+    private OnCustomizeClickListener customizeClickListener;
 
-    public ContactsAdapter() {
+    // Callback interface to notify the fragment when the Customize button is clicked
+    public interface OnCustomizeClickListener {
+        void onCustomizeClicked(Birthday birthday);
+    }
+
+    public ContactsAdapter(Context context, OnCustomizeClickListener listener) {
+        this.context = context;
         this.originalBirthdayList = new ArrayList<>();
         this.filteredBirthdayList = new ArrayList<>();
+        this.customizeClickListener = listener;
         databaseReference = FirebaseDatabase.getInstance().getReference("birthdays");
     }
 
     public void updateList(List<Birthday> newList) {
+        if (newList == null) {
+            Log.e(TAG, "updateList: newList is null");
+            return;
+        }
         originalBirthdayList.clear();
         originalBirthdayList.addAll(newList);
         filteredBirthdayList.clear();
         filteredBirthdayList.addAll(newList);
         notifyDataSetChanged();
+        Log.d(TAG, "Updated list with " + newList.size() + " birthdays");
     }
 
     public void filter(String query) {
         filteredBirthdayList.clear();
-        if (query.isEmpty()) {
+        if (query == null || query.isEmpty()) {
             filteredBirthdayList.addAll(originalBirthdayList);
         } else {
             String searchQuery = query.toLowerCase(Locale.getDefault());
             for (Birthday birthday : originalBirthdayList) {
-                if (birthday.getName().toLowerCase(Locale.getDefault()).contains(searchQuery)) {
+                if (birthday != null && birthday.getName() != null &&
+                        birthday.getName().toLowerCase(Locale.getDefault()).contains(searchQuery)) {
                     filteredBirthdayList.add(birthday);
                 }
             }
         }
+        selectedPosition = -1;
         notifyDataSetChanged();
+        Log.d(TAG, "Filtered list to " + filteredBirthdayList.size() + " birthdays with query: " + query);
     }
 
     @NonNull
@@ -85,11 +101,20 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
 
     @Override
     public void onBindViewHolder(@NonNull ContactsViewHolder holder, int position) {
-        Log.d(TAG, "Binding data for position " + position + ": " + filteredBirthdayList.get(position).getName());
+        Log.d(TAG, "Binding data for position " + position);
+        if (position >= filteredBirthdayList.size()) {
+            Log.e(TAG, "Position " + position + " is out of bounds for filteredBirthdayList size " + filteredBirthdayList.size());
+            return;
+        }
+
+        Birthday birthday = filteredBirthdayList.get(position);
+        if (birthday == null) {
+            Log.e(TAG, "Birthday at position " + position + " is null");
+            return;
+        }
 
         holder.birthdayListContainer.removeAllViews();
 
-        Birthday birthday = filteredBirthdayList.get(position);
         LinearLayout birthdayRow = new LinearLayout(holder.itemView.getContext());
         birthdayRow.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -98,21 +123,33 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
         TextView tvName = new TextView(holder.itemView.getContext());
         tvName.setLayoutParams(new LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-        tvName.setText(birthday.getName());
-        tvName.setTextColor(0xFF000000); // Set text color to black
+        tvName.setText(birthday.getName() != null ? birthday.getName() : "Unknown");
+        tvName.setTextColor(0xFF000000);
         tvName.setTextSize(18);
         tvName.setTypeface(Typeface.DEFAULT_BOLD);
 
         TextView tvDate = new TextView(holder.itemView.getContext());
         tvDate.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        tvDate.setText(birthday.getDate());
+        tvDate.setText(birthday.getDate() != null ? birthday.getDate() : "N/A");
         tvDate.setTextSize(16);
 
         birthdayRow.addView(tvName);
         birthdayRow.addView(tvDate);
 
         holder.birthdayListContainer.addView(birthdayRow);
+
+        holder.buttonsContainer.setVisibility(position == selectedPosition ? View.VISIBLE : View.GONE);
+
+        holder.itemView.setOnClickListener(v -> {
+            if (selectedPosition == position) {
+                selectedPosition = -1;
+            } else {
+                selectedPosition = position;
+            }
+            notifyDataSetChanged();
+            Log.d(TAG, "Toggled buttons visibility for position " + position + ", selectedPosition: " + selectedPosition);
+        });
 
         holder.reminderButton.setOnClickListener(v -> {
             setBirthdayReminder(holder.itemView.getContext(), birthday, position);
@@ -121,9 +158,15 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                     Toast.LENGTH_SHORT).show();
         });
 
+        holder.customizeButton.setOnClickListener(v -> {
+            if (customizeClickListener != null) {
+                customizeClickListener.onCustomizeClicked(birthday);
+            }
+        });
+
         holder.deleteButton.setOnClickListener(v -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(holder.itemView.getContext());
-            builder.setMessage("Do you want to delete " + birthday.getName() + "'s birthday?");
+            builder.setMessage("Do you want to delete " + (birthday.getName() != null ? birthday.getName() : "this birthday") + "'s birthday?");
             builder.setPositiveButton("DELETE", (dialog, which) -> {
                 deleteBirthday(holder.itemView.getContext(), birthday, position);
             });
@@ -140,7 +183,19 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
     }
 
     private void setBirthdayReminder(Context context, Birthday birthday, int position) {
+        if (birthday == null || birthday.getDate() == null) {
+            Log.e(TAG, "Cannot set reminder: birthday or date is null at position " + position);
+            Toast.makeText(context, "Failed to set reminder: Invalid birthday data", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) {
+            Log.e(TAG, "AlarmManager is null");
+            Toast.makeText(context, "Failed to set reminder: System service unavailable", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         Intent intent = new Intent(context, BirthdayReminderReceiver.class);
         intent.putExtra("name", birthday.getName());
         intent.putExtra("date", birthday.getDate());
@@ -185,17 +240,24 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
             editor.apply();
         } catch (ParseException e) {
             e.printStackTrace();
-            Log.e(TAG, "Failed to parse date for " + birthday.getName());
+            Log.e(TAG, "Failed to parse date for " + (birthday.getName() != null ? birthday.getName() : "unknown"));
+            Toast.makeText(context, "Failed to set reminder: Invalid date format", Toast.LENGTH_SHORT).show();
         }
     }
 
     private void deleteBirthday(Context context, Birthday birthday, int position) {
+        if (birthday == null || birthday.getName() == null) {
+            Log.e(TAG, "Cannot delete birthday: birthday or name is null at position " + position);
+            return;
+        }
+
         databaseReference.orderByChild("name").equalTo(birthday.getName()).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                boolean deleted = false;
                 for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
                     Birthday dbBirthday = dataSnapshot.getValue(Birthday.class);
-                    if (dbBirthday != null && dbBirthday.getDate().equals(birthday.getDate())) {
+                    if (dbBirthday != null && dbBirthday.getDate() != null && dbBirthday.getDate().equals(birthday.getDate())) {
                         dataSnapshot.getRef().removeValue((error, ref) -> {
                             if (error == null) {
                                 AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -208,37 +270,71 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                                 SharedPreferences.Editor editor = prefs.edit();
                                 editor.remove(REMINDER_KEY + position);
                                 editor.apply();
+
+                                filteredBirthdayList.remove(position);
+                                notifyItemRemoved(position);
+                                notifyDataSetChanged();
+                                Toast.makeText(context, "Birthday deleted", Toast.LENGTH_SHORT).show();
+                                Log.d(TAG, "Deleted birthday: " + birthday.getName());
                             } else {
                                 Toast.makeText(context, "Failed to delete birthday", Toast.LENGTH_SHORT).show();
+                                Log.e(TAG, "Failed to delete birthday: " + error.getMessage());
                             }
                         });
+                        deleted = true;
                         break;
                     }
+                }
+                if (!deleted) {
+                    Log.w(TAG, "No matching birthday found to delete for name: " + birthday.getName());
                 }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
                 Toast.makeText(context, "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Database error on delete: " + error.getMessage());
             }
         });
     }
 
     @Override
     public int getItemCount() {
-        return filteredBirthdayList.size();
+        int size = filteredBirthdayList != null ? filteredBirthdayList.size() : 0;
+        Log.d(TAG, "getItemCount: " + size);
+        return size;
     }
 
     static class ContactsViewHolder extends RecyclerView.ViewHolder {
         LinearLayout birthdayListContainer;
+        LinearLayout buttonsContainer;
         Button reminderButton;
+        Button customizeButton;
         Button deleteButton;
 
         public ContactsViewHolder(@NonNull View itemView) {
             super(itemView);
             birthdayListContainer = itemView.findViewById(R.id.birthday_list_container);
+            buttonsContainer = itemView.findViewById(R.id.buttons_container);
             reminderButton = itemView.findViewById(R.id.remindBd);
+            customizeButton = itemView.findViewById(R.id.customizeM);
             deleteButton = itemView.findViewById(R.id.deleteBd);
+
+            if (birthdayListContainer == null) {
+                Log.e(TAG, "birthdayListContainer is null in item_contact layout");
+            }
+            if (buttonsContainer == null) {
+                Log.e(TAG, "buttonsContainer is null in item_contact layout");
+            }
+            if (reminderButton == null) {
+                Log.e(TAG, "reminderButton is null in item_contact layout");
+            }
+            if (customizeButton == null) {
+                Log.e(TAG, "customizeButton is null in item_contact layout");
+            }
+            if (deleteButton == null) {
+                Log.e(TAG, "deleteButton is null in item_contact layout");
+            }
         }
     }
 }
