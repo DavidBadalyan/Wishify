@@ -50,6 +50,8 @@ dependencies {
     implementation("org.jetbrains:annotations:24.1.0")
     implementation("androidx.browser:browser:1.8.0")
     implementation("androidx.work:work-runtime:2.9.0")
+    implementation("androidx.work:work-runtime:2.8.1")
+    implementation("com.squareup.okhttp3:okhttp:4.10.0")
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)

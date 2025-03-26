@@ -48,7 +48,6 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
     private Context context;
     private OnCustomizeClickListener customizeClickListener;
 
-    // Callback interface to notify the fragment when the Customize button is clicked
     public interface OnCustomizeClickListener {
         void onCustomizeClicked(Birthday birthday);
     }
@@ -152,7 +151,45 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
         });
 
         holder.reminderButton.setOnClickListener(v -> {
-            setBirthdayReminder(holder.itemView.getContext(), birthday, position);
+            Log.d("Reminder", "Button clicked");
+
+            String name = birthday.getName();
+            String date = birthday.getDate();
+            Log.d("Reminder", "Name: " + name + ", Date: " + date);
+
+            if (date == null || !date.matches("\\d{2}-\\d{2}")) {
+                Toast.makeText(context, "Invalid date format: " + date, Toast.LENGTH_SHORT).show();
+                Log.d("Reminder", "Invalid date format");
+                return;
+            }
+
+            String[] parts = date.split("-");
+            String month = parts[0];
+            String day = parts[1];
+            Log.d("Reminder", "Month: " + month + ", Day: " + day);
+
+            int year = Calendar.getInstance().get(Calendar.YEAR);
+            int currentMonth = Calendar.getInstance().get(Calendar.MONTH);
+            Log.d("Reminder", "Current year: " + year + ", Current month: " + currentMonth);
+
+            int parsedMonth = Integer.parseInt(month);
+            if (currentMonth > parsedMonth - 1) {
+                year += 1;
+                Log.d("Reminder", "Year incremented to: " + year);
+            }
+
+            if (context != null) {
+                Log.d("Reminder", "Setting birthday reminder...");
+                try {
+                    setBirthdayReminder(context, name, Integer.parseInt(day), parsedMonth, year);
+                    Toast.makeText(context, "Reminder set for " + name, Toast.LENGTH_SHORT).show();
+                } catch (Exception e) {
+                    Log.e("Reminder", "Error setting reminder: " + e.getMessage(), e);
+                    Toast.makeText(context, "Failed to set reminder", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Log.e("Reminder", "Context is null");
+            }
             Toast.makeText(holder.itemView.getContext(),
                     "Reminder set for " + birthday.getName() + " on " + birthday.getDate(),
                     Toast.LENGTH_SHORT).show();
@@ -182,66 +219,41 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
         });
     }
 
-    private void setBirthdayReminder(Context context, Birthday birthday, int position) {
-        if (birthday == null || birthday.getDate() == null) {
-            Log.e(TAG, "Cannot set reminder: birthday or date is null at position " + position);
-            Toast.makeText(context, "Failed to set reminder: Invalid birthday data", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        if (alarmManager == null) {
-            Log.e(TAG, "AlarmManager is null");
-            Toast.makeText(context, "Failed to set reminder: System service unavailable", Toast.LENGTH_SHORT).show();
-            return;
-        }
+    public void setBirthdayReminder(Context context, String name, int day, int month, int year) {
+        Log.d("Reminder", "setBirthdayReminder called with: " + name + ", " + day + "-" + month + "-" + year);
 
         Intent intent = new Intent(context, BirthdayReminderReceiver.class);
-        intent.putExtra("name", birthday.getName());
-        intent.putExtra("date", birthday.getDate());
+        intent.putExtra("name", name);
+        intent.putExtra("notificationId", name.hashCode());
 
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, position, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                context,
+                name.hashCode(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 
         Calendar calendar = Calendar.getInstance();
-        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd", Locale.getDefault());
+        calendar.set(Calendar.YEAR, year);
+        calendar.set(Calendar.MONTH, month - 1);
+        calendar.set(Calendar.DAY_OF_MONTH, day);
+        calendar.set(Calendar.HOUR_OF_DAY, 9);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        Log.d("Reminder", "Alarm set for: " + calendar.getTime().toString());
 
-        try {
-            calendar.setTime(sdf.parse(birthday.getDate()));
-            int currentYear = Calendar.getInstance().get(Calendar.YEAR);
-            calendar.set(Calendar.YEAR, currentYear);
-
-            if (calendar.before(Calendar.getInstance())) {
-                calendar.add(Calendar.YEAR, 1);
+        if (alarmManager != null) {
+            try {
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
+                Log.d("Reminder", "Alarm successfully scheduled");
+            } catch (SecurityException e) {
+                Log.e("Reminder", "SecurityException: " + e.getMessage(), e);
+                Toast.makeText(context, "Permission denied for alarm", Toast.LENGTH_SHORT).show();
             }
-
-            calendar.set(Calendar.HOUR_OF_DAY, 9);
-            calendar.set(Calendar.MINUTE, 0);
-            calendar.set(Calendar.SECOND, 0);
-
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                if (alarmManager.canScheduleExactAlarms()) {
-                    alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
-                } else {
-                    Toast.makeText(context, "Please allow exact alarms in settings to set reminders", Toast.LENGTH_LONG).show();
-                    Intent settingsIntent = new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
-                    settingsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    context.startActivity(settingsIntent);
-                    return;
-                }
-            } else {
-                alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
-            }
-            Log.d(TAG, "Alarm set for " + birthday.getName() + " at " + calendar.getTime());
-
-            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-            SharedPreferences.Editor editor = prefs.edit();
-            editor.putString(REMINDER_KEY + position, birthday.getName() + "|" + birthday.getDate());
-            editor.apply();
-        } catch (ParseException e) {
-            e.printStackTrace();
-            Log.e(TAG, "Failed to parse date for " + (birthday.getName() != null ? birthday.getName() : "unknown"));
-            Toast.makeText(context, "Failed to set reminder: Invalid date format", Toast.LENGTH_SHORT).show();
+        } else {
+            Log.e("Reminder", "AlarmManager is null");
         }
     }
 

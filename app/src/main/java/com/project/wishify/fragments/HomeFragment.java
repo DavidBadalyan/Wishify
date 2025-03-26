@@ -2,7 +2,10 @@ package com.project.wishify.fragments;
 
 import static android.content.ContentValues.TAG;
 
+import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -32,6 +35,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.project.wishify.R;
 import com.project.wishify.adapters.BirthdayAdapter;
 import com.project.wishify.classes.Birthday;
+import com.project.wishify.receivers.BirthdayReminderReceiver;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -138,7 +142,51 @@ public class HomeFragment extends Fragment {
         fetchBirthdays();
 
         remindMeButton.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Remind Me clicked (notification logic to be added)", Toast.LENGTH_SHORT).show();
+            Log.d("Reminder", "Button clicked");
+
+            if (birthdayList.isEmpty()) {
+                Toast.makeText(getContext(), "No birthdays available", Toast.LENGTH_SHORT).show();
+                Log.d("Reminder", "Birthday list is empty");
+                return;
+            }
+
+            String name = birthdayList.get(0).getName();
+            String date = birthdayList.get(0).getDate();
+            Log.d("Reminder", "Name: " + name + ", Date: " + date);
+
+            if (date == null || !date.matches("\\d{2}-\\d{2}")) {
+                Toast.makeText(getContext(), "Invalid date format: " + date, Toast.LENGTH_SHORT).show();
+                Log.d("Reminder", "Invalid date format");
+                return;
+            }
+
+            String[] parts = date.split("-");
+            String month = parts[0];
+            String day = parts[1];
+            Log.d("Reminder", "Month: " + month + ", Day: " + day);
+
+            int year = Calendar.getInstance().get(Calendar.YEAR);
+            int currentMonth = Calendar.getInstance().get(Calendar.MONTH);
+            Log.d("Reminder", "Current year: " + year + ", Current month: " + currentMonth);
+
+            int parsedMonth = Integer.parseInt(month);
+            if (currentMonth > parsedMonth - 1) {
+                year += 1;
+                Log.d("Reminder", "Year incremented to: " + year);
+            }
+
+            if (getContext() != null) {
+                Log.d("Reminder", "Setting birthday reminder...");
+                try {
+                    setBirthdayReminder(getContext(), name, Integer.parseInt(day), parsedMonth, year);
+                    Toast.makeText(getContext(), "Reminder set for " + name, Toast.LENGTH_SHORT).show();
+                } catch (Exception e) {
+                    Log.e("Reminder", "Error setting reminder: " + e.getMessage(), e);
+                    Toast.makeText(getContext(), "Failed to set reminder", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Log.e("Reminder", "Context is null");
+            }
         });
 
         customizeButton.setOnClickListener(v -> showSendMessageDialog());
@@ -222,5 +270,43 @@ public class HomeFragment extends Fragment {
         });
 
         dialog.show();
+    }
+
+    public void setBirthdayReminder(Context context, String name, int day, int month, int year) {
+        Log.d("Reminder", "setBirthdayReminder called with: " + name + ", " + day + "-" + month + "-" + year);
+
+        Intent intent = new Intent(context, BirthdayReminderReceiver.class);
+        intent.putExtra("name", name);
+        intent.putExtra("notificationId", name.hashCode());
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                context,
+                name.hashCode(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.YEAR, year);
+        calendar.set(Calendar.MONTH, month - 1); // 0-based
+        calendar.set(Calendar.DAY_OF_MONTH, day);
+        calendar.set(Calendar.HOUR_OF_DAY, 9);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        Log.d("Reminder", "Alarm set for: " + calendar.getTime().toString());
+
+        if (alarmManager != null) {
+            try {
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
+                Log.d("Reminder", "Alarm successfully scheduled");
+            } catch (SecurityException e) {
+                Log.e("Reminder", "SecurityException: " + e.getMessage(), e);
+                Toast.makeText(context, "Permission denied for alarm", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Log.e("Reminder", "AlarmManager is null");
+        }
     }
 }

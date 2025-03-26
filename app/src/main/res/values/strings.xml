@@ -1,5 +1,12 @@
 <resources>
     <string name="app_name">Wishify</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string-array name="celebrity_list">
+        <item>Select a celebrity</item>
+        <item>Morgan Freeman</item>
+        <item>Scarlett Johansson</item>
+        <item>Chris Hemsworth</item>
+        <item>Beyoncé</item>
+        <item>Tom Hanks</item>
+    </string-array>
 </resources>
