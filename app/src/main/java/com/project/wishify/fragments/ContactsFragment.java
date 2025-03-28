@@ -313,8 +313,8 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                 calendar.add(Calendar.YEAR, 1);
             }
 
-            calendar.set(Calendar.HOUR_OF_DAY, 22);
-            calendar.set(Calendar.MINUTE, 20);
+            calendar.set(Calendar.HOUR_OF_DAY, 12);
+            calendar.set(Calendar.MINUTE, 36);
             calendar.set(Calendar.SECOND, 0);
 
 //            long delay = calendar.getTimeInMillis() - System.currentTimeMillis();

@@ -14,6 +14,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.FileProvider;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
@@ -79,14 +80,13 @@ public class MessageSenderWorker extends Worker {
             if (status == TextToSpeech.SUCCESS) {
                 Log.d(TAG, "generateAudioFile: TextToSpeech initialized successfully");
                 tts.setLanguage(Locale.US);
-                // Adjust pitch and speech rate to mimic a celebrity (placeholder)
                 switch (celebrity.toLowerCase()) {
                     case "morgan freeman":
-                        tts.setPitch(0.8f); // Lower pitch
-                        tts.setSpeechRate(0.9f); // Slower speech
+                        tts.setPitch(0.8f);
+                        tts.setSpeechRate(0.9f);
                         break;
                     case "scarlett johansson":
-                        tts.setPitch(1.2f); // Higher pitch
+                        tts.setPitch(1.2f);
                         tts.setSpeechRate(1.0f);
                         break;
                     case "chris hemsworth":
@@ -127,7 +127,7 @@ public class MessageSenderWorker extends Worker {
         });
 
         try {
-            boolean completed = latch.await(10, TimeUnit.SECONDS); // Wait for TTS to complete
+            boolean completed = latch.await(10, TimeUnit.SECONDS);
             if (!completed) {
                 Log.e(TAG, "generateAudioFile: TTS timed out after 10 seconds");
             }
@@ -137,15 +137,16 @@ public class MessageSenderWorker extends Worker {
         }
 
         if (tts != null) {
+            tts.stop(); // Ensure synthesis is stopped
             tts.shutdown();
             Log.d(TAG, "generateAudioFile: TextToSpeech shut down");
         }
 
-        if (outputFile[0] != null && outputFile[0].exists()) {
-            Log.d(TAG, "generateAudioFile: Audio file exists at: " + outputFile[0].getAbsolutePath());
+        if (outputFile[0] != null && outputFile[0].exists() && outputFile[0].length() > 0) {
+            Log.d(TAG, "generateAudioFile: Audio file exists at: " + outputFile[0].getAbsolutePath() + ", size: " + outputFile[0].length() + " bytes");
             return outputFile[0];
         } else {
-            Log.e(TAG, "generateAudioFile: Audio file does not exist");
+            Log.e(TAG, "generateAudioFile: Audio file does not exist or is empty");
             return null;
         }
     }
@@ -173,10 +174,22 @@ public class MessageSenderWorker extends Worker {
         Intent intent = new Intent(Intent.ACTION_SEND);
         intent.setData(Uri.parse(appScheme));
         intent.setType("audio/*");
-        intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(audioFile));
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
-        PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        // Use FileProvider to generate a content URI
+        Uri audioUri = FileProvider.getUriForFile(
+                getApplicationContext(),
+                getApplicationContext().getPackageName() + ".fileprovider",
+                audioFile
+        );
+        intent.putExtra(Intent.EXTRA_STREAM, audioUri);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); // Grant permission to the receiving app
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                getApplicationContext(),
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
