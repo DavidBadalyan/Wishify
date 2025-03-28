@@ -23,6 +23,13 @@ import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import android.media.MediaCodec;
+import android.media.MediaExtractor;
+import android.media.MediaFormat;
+import android.media.MediaMuxer;
+import java.io.File;
+import java.nio.ByteBuffer;
+
 public class MessageSenderWorker extends Worker {
 
     public static final String KEY_NAME = "name";
@@ -37,6 +44,95 @@ public class MessageSenderWorker extends Worker {
 
     public MessageSenderWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
+    }
+
+    private File convertWavToMp3(File wavFile, File mp3File) {
+        try {
+            // Step 1: Extract audio data from WAV
+            MediaExtractor extractor = new MediaExtractor();
+            extractor.setDataSource(wavFile.getAbsolutePath());
+            extractor.selectTrack(0); // Assume single audio track
+            MediaFormat inputFormat = extractor.getTrackFormat(0);
+
+            // Step 2: Configure MediaCodec for MP3 encoding
+            MediaCodec codec = MediaCodec.createEncoderByType("audio/mpeg");
+            MediaFormat outputFormat = MediaFormat.createAudioFormat("audio/mpeg",
+                    inputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE),
+                    inputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT));
+            outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, 128000); // 128 kbps
+            codec.configure(outputFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+            codec.start();
+
+            // Step 3: Set up MediaMuxer for MP3 output
+            MediaMuxer muxer = new MediaMuxer(mp3File.getAbsolutePath(), MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+            int audioTrackIndex = -1; // Initialize to invalid value
+            boolean muxerStarted = false;
+
+            // Step 4: Read WAV, encode to MP3, and write
+            ByteBuffer[] inputBuffers = codec.getInputBuffers();
+            ByteBuffer[] outputBuffers = codec.getOutputBuffers();
+            MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+
+            boolean inputDone = false;
+            boolean outputDone = false;
+
+            while (!outputDone) {
+                if (!inputDone) {
+                    int inputBufferIndex = codec.dequeueInputBuffer(10000); // 10ms timeout
+                    if (inputBufferIndex >= 0) {
+                        ByteBuffer inputBuffer = inputBuffers[inputBufferIndex];
+                        inputBuffer.clear();
+                        int sampleSize = extractor.readSampleData(inputBuffer, 0);
+                        if (sampleSize < 0) {
+                            codec.queueInputBuffer(inputBufferIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                            inputDone = true;
+                        } else {
+                            codec.queueInputBuffer(inputBufferIndex, 0, sampleSize, extractor.getSampleTime(), 0);
+                            extractor.advance();
+                        }
+                    }
+                }
+
+                int outputBufferIndex = codec.dequeueOutputBuffer(bufferInfo, 10000);
+                if (outputBufferIndex >= 0) {
+                    ByteBuffer outputBuffer = outputBuffers[outputBufferIndex];
+                    if (bufferInfo.size > 0 && muxerStarted) {
+                        muxer.writeSampleData(audioTrackIndex, outputBuffer, bufferInfo);
+                    }
+                    codec.releaseOutputBuffer(outputBufferIndex, false);
+                    if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                        outputDone = true;
+                    }
+                } else if (outputBufferIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+                    // Add track and start muxer once format is available
+                    if (!muxerStarted) {
+                        audioTrackIndex = muxer.addTrack(codec.getOutputFormat());
+                        muxer.start();
+                        muxerStarted = true;
+                    }
+                } else if (outputBufferIndex == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
+                    outputBuffers = codec.getOutputBuffers();
+                }
+            }
+
+            // Step 5: Cleanup
+            extractor.release();
+            codec.stop();
+            codec.release();
+            muxer.stop();
+            muxer.release();
+
+            if (mp3File.exists() && mp3File.length() > 0) {
+                Log.d(TAG, "convertWavToMp3: MP3 file created at: " + mp3File.getAbsolutePath() + ", size: " + mp3File.length() + " bytes");
+                return mp3File;
+            } else {
+                Log.e(TAG, "convertWavToMp3: MP3 file creation failed");
+                return null;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "convertWavToMp3: Error converting WAV to MP3: " + e.getMessage(), e);
+            return null;
+        }
     }
 
     @NonNull
@@ -74,7 +170,7 @@ public class MessageSenderWorker extends Worker {
     private File generateAudioFile(String message, String celebrity) {
         Log.d(TAG, "generateAudioFile: Starting audio generation for celebrity: " + celebrity);
         final CountDownLatch latch = new CountDownLatch(1);
-        final File[] outputFile = new File[1];
+        final File[] wavFile = new File[1];
 
         tts = new TextToSpeech(getApplicationContext(), status -> {
             if (status == TextToSpeech.SUCCESS) {
@@ -108,8 +204,8 @@ public class MessageSenderWorker extends Worker {
 
                 try {
                     File cacheDir = getApplicationContext().getCacheDir();
-                    outputFile[0] = new File(cacheDir, "birthday_message_" + System.currentTimeMillis() + ".wav");
-                    int result = tts.synthesizeToFile(message, null, outputFile[0], "birthday_message");
+                    wavFile[0] = new File(cacheDir, "birthday_message_" + System.currentTimeMillis() + ".wav");
+                    int result = tts.synthesizeToFile(message, null, wavFile[0], "birthday_message");
                     if (result == TextToSpeech.SUCCESS) {
                         Log.d(TAG, "generateAudioFile: Audio synthesis successful");
                     } else {
@@ -137,16 +233,26 @@ public class MessageSenderWorker extends Worker {
         }
 
         if (tts != null) {
-            tts.stop(); // Ensure synthesis is stopped
+            tts.stop();
             tts.shutdown();
             Log.d(TAG, "generateAudioFile: TextToSpeech shut down");
         }
 
-        if (outputFile[0] != null && outputFile[0].exists() && outputFile[0].length() > 0) {
-            Log.d(TAG, "generateAudioFile: Audio file exists at: " + outputFile[0].getAbsolutePath() + ", size: " + outputFile[0].length() + " bytes");
-            return outputFile[0];
+        if (wavFile[0] == null || !wavFile[0].exists() || wavFile[0].length() == 0) {
+            Log.e(TAG, "generateAudioFile: WAV file does not exist or is empty");
+            return null;
+        }
+
+        // Convert WAV to MP3
+        File mp3File = new File(getApplicationContext().getCacheDir(), "birthday_message_" + System.currentTimeMillis() + ".mp3");
+        File resultFile = convertWavToMp3(wavFile[0], mp3File);
+        if (resultFile != null) {
+            if (wavFile[0].delete()) {
+                Log.d(TAG, "generateAudioFile: Temporary WAV file deleted");
+            }
+            return resultFile;
         } else {
-            Log.e(TAG, "generateAudioFile: Audio file does not exist or is empty");
+            Log.e(TAG, "generateAudioFile: MP3 conversion failed");
             return null;
         }
     }
