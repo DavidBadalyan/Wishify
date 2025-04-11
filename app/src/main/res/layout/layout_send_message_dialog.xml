@@ -8,7 +8,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Send Birthday Message"
+        android:text="Schedule Birthday Message"
         android:textSize="20sp"
         android:textStyle="bold"
         android:layout_gravity="center"/>
@@ -30,43 +30,6 @@
         android:background="@drawable/black_rounded_et"
         android:minLines="3" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Send via:"
-        android:textSize="16sp" />
-
-    <RadioGroup
-        android:id="@+id/radio_group_apps"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="8dp">
-
-        <RadioButton
-            android:id="@+id/radio_whatsapp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="WhatsApp" />
-
-        <RadioButton
-            android:id="@+id/radio_telegram"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Telegram" />
-
-        <RadioButton
-            android:id="@+id/radio_viber"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Viber" />
-
-    </RadioGroup>
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -84,21 +47,18 @@
             android:text="Cancel"
             android:textColor="#FFFFFF"
             android:textAllCaps="false"
-            android:layout_marginRight="20dp"
-            />
+            android:layout_marginRight="20dp" />
 
         <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/send_button"
+            android:id="@+id/schedule_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:background="@drawable/button_gradient"
             android:backgroundTint="@null"
-            android:text="Send"
+            android:text="Schedule"
             android:textColor="#FFFFFF"
-            android:textAllCaps="false"
-            />
+            android:textAllCaps="false" />
 
     </LinearLayout>
-
 </LinearLayout>
