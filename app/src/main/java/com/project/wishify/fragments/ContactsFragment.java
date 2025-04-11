@@ -36,13 +36,13 @@ import com.project.wishify.classes.Birthday;
 import com.project.wishify.receivers.MessageNotificationReceiver;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
 public class ContactsFragment extends Fragment implements ContactsAdapter.OnCustomizeClickListener {
@@ -178,8 +178,8 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
         Button cancelButton = dialogView.findViewById(R.id.cancel_button);
         Button scheduleButton = dialogView.findViewById(R.id.schedule_button);
 
-        // Pre-fill with an AI-generated message
-        etMessage.setText(generateAIMessage(birthday.getName()));
+        // Pre-fill with AI-generated wish
+        etMessage.setText(generateAIWish(birthday.getName()));
 
         ArrayAdapter<CharSequence> celebrityAdapter = ArrayAdapter.createFromResource(
                 requireContext(),
@@ -209,18 +209,36 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
             File audioFile = generateAudioFile(message, selectedCelebrity);
             if (audioFile != null) {
                 scheduleMessageNotification(birthday, audioFile.getAbsolutePath());
-                Toast.makeText(getContext(), "Audio message scheduled for " + birthday.getName() + " on " + birthday.getDate(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Audio wish scheduled for " + birthday.getName() + " on " + birthday.getDate(), Toast.LENGTH_SHORT).show();
                 dialog.dismiss();
             } else {
-                Toast.makeText(getContext(), "Failed to generate audio message", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Failed to generate audio wish", Toast.LENGTH_SHORT).show();
             }
         });
 
         dialog.show();
     }
 
-    private String generateAIMessage(String name) {
-        return "Greetings on your special day, " + name + "! May this year bring you boundless joy, endless adventures, and the courage to chase every dream. Here’s to a spectacular birthday filled with laughter and love!";
+    private String generateAIWish(String name) {
+        // Rule-based "AI" wish generator
+        Random random = new Random();
+        String[] greetings = {"Happy birthday", "Wishing you a fantastic birthday", "Cheers to your special day"};
+        String[] wishes = {
+                "full of joy, adventure, and love",
+                "bursting with happiness and success",
+                "with endless possibilities and great moments"
+        };
+        String[] closings = {
+                "Have an amazing year ahead!",
+                "Make it a day to remember!",
+                "Here’s to you!"
+        };
+
+        String greeting = greetings[random.nextInt(greetings.length)];
+        String wish = wishes[random.nextInt(wishes.length)];
+        String closing = closings[random.nextInt(closings.length)];
+
+        return String.format("%s, %s! May your day be %s. %s", greeting, name, wish, closing);
     }
 
     private File generateAudioFile(String message, String celebrity) {
@@ -306,7 +324,7 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
 
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.YEAR, year);
-        calendar.set(Calendar.MONTH, month - 1); // 0-based
+        calendar.set(Calendar.MONTH, month - 1);
         calendar.set(Calendar.DAY_OF_MONTH, day);
         calendar.set(Calendar.HOUR_OF_DAY, 9);
         calendar.set(Calendar.MINUTE, 0);
@@ -315,13 +333,11 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
         if (alarmManager != null) {
             try {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
-                Log.d(TAG, "Audio message notification scheduled for " + birthday.getName() + " at " + calendar.getTime());
+                Log.d(TAG, "Audio wish scheduled for " + birthday.getName() + " at " + calendar.getTime());
             } catch (SecurityException e) {
-                Toast.makeText(getContext(), "Permission denied for scheduling message", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Permission denied for scheduling", Toast.LENGTH_SHORT).show();
                 Log.e(TAG, "SecurityException: " + e.getMessage());
             }
-        } else {
-            Log.e(TAG, "AlarmManager is null");
         }
     }
 
