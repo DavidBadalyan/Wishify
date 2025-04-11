@@ -11,7 +11,6 @@ import android.os.Build;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
-import com.project.wishify.R;
 import com.project.wishify.fragments.MessagePreviewActivity;
 
 public class MessageNotificationReceiver extends BroadcastReceiver {
@@ -20,13 +19,13 @@ public class MessageNotificationReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         String name = intent.getStringExtra("name");
-        String message = intent.getStringExtra("message");
+        String audioFilePath = intent.getStringExtra("audioFilePath");
         String phoneNumber = intent.getStringExtra("phoneNumber");
         int notificationId = intent.getIntExtra("notificationId", 0);
 
         Intent activityIntent = new Intent(context, MessagePreviewActivity.class);
         activityIntent.putExtra("name", name);
-        activityIntent.putExtra("message", message);
+        activityIntent.putExtra("audioFilePath", audioFilePath);
         activityIntent.putExtra("phoneNumber", phoneNumber);
         activityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
 
@@ -48,8 +47,8 @@ public class MessageNotificationReceiver extends BroadcastReceiver {
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle("Birthday Message for " + name)
-                .setContentText("Tap to review and send your message")
+                .setContentTitle("Birthday Audio Wish for " + name)
+                .setContentText("Tap to review and send your audio wish")
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true);

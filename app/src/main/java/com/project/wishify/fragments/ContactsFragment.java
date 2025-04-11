@@ -8,12 +8,15 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -32,6 +35,7 @@ import com.project.wishify.adapters.ContactsAdapter;
 import com.project.wishify.classes.Birthday;
 import com.project.wishify.receivers.MessageNotificationReceiver;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -39,12 +43,14 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CountDownLatch;
 
 public class ContactsFragment extends Fragment implements ContactsAdapter.OnCustomizeClickListener {
     private RecyclerView recyclerView;
     private ContactsAdapter adapter;
     private List<Birthday> birthdayList;
     private DatabaseReference databaseReference;
+    private TextToSpeech tts;
 
     private void fetchBirthdays() {
         databaseReference = FirebaseDatabase.getInstance().getReference("birthdays");
@@ -92,6 +98,18 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
                 Log.w(TAG, "Failed to read value: " + error.getMessage());
+            }
+        });
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        tts = new TextToSpeech(getContext(), status -> {
+            if (status == TextToSpeech.SUCCESS) {
+                tts.setLanguage(Locale.US);
+            } else {
+                Log.e(TAG, "TTS initialization failed");
             }
         });
     }
@@ -156,8 +174,20 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
         builder.setView(dialogView);
 
         EditText etMessage = dialogView.findViewById(R.id.et_message);
+        Spinner spinnerCelebrity = dialogView.findViewById(R.id.spinner_celebrity);
         Button cancelButton = dialogView.findViewById(R.id.cancel_button);
         Button scheduleButton = dialogView.findViewById(R.id.schedule_button);
+
+        // Pre-fill with an AI-generated message
+        etMessage.setText(generateAIMessage(birthday.getName()));
+
+        ArrayAdapter<CharSequence> celebrityAdapter = ArrayAdapter.createFromResource(
+                requireContext(),
+                R.array.celebrity_list,
+                android.R.layout.simple_spinner_item
+        );
+        celebrityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerCelebrity.setAdapter(celebrityAdapter);
 
         AlertDialog dialog = builder.create();
 
@@ -165,24 +195,93 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
 
         scheduleButton.setOnClickListener(v -> {
             String message = etMessage.getText().toString().trim();
+            String selectedCelebrity = spinnerCelebrity.getSelectedItem().toString();
 
             if (message.isEmpty()) {
                 Toast.makeText(getContext(), "Please enter a message", Toast.LENGTH_SHORT).show();
                 return;
             }
+            if (selectedCelebrity.equals("Select a celebrity")) {
+                Toast.makeText(getContext(), "Please select a celebrity", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-            scheduleMessageNotification(birthday, message);
-            Toast.makeText(getContext(), "Message scheduled for " + birthday.getName() + " on " + birthday.getDate(), Toast.LENGTH_SHORT).show();
-            dialog.dismiss();
+            File audioFile = generateAudioFile(message, selectedCelebrity);
+            if (audioFile != null) {
+                scheduleMessageNotification(birthday, audioFile.getAbsolutePath());
+                Toast.makeText(getContext(), "Audio message scheduled for " + birthday.getName() + " on " + birthday.getDate(), Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
+            } else {
+                Toast.makeText(getContext(), "Failed to generate audio message", Toast.LENGTH_SHORT).show();
+            }
         });
 
         dialog.show();
     }
 
-    private void scheduleMessageNotification(Birthday birthday, String message) {
+    private String generateAIMessage(String name) {
+        return "Greetings on your special day, " + name + "! May this year bring you boundless joy, endless adventures, and the courage to chase every dream. Here’s to a spectacular birthday filled with laughter and love!";
+    }
+
+    private File generateAudioFile(String message, String celebrity) {
+        if (tts == null) {
+            Log.e(TAG, "TTS not initialized");
+            return null;
+        }
+
+        switch (celebrity.toLowerCase()) {
+            case "morgan freeman":
+                tts.setPitch(0.8f);
+                tts.setSpeechRate(0.9f);
+                break;
+            case "scarlett johansson":
+                tts.setPitch(1.2f);
+                tts.setSpeechRate(1.0f);
+                break;
+            case "chris hemsworth":
+                tts.setPitch(0.9f);
+                tts.setSpeechRate(1.0f);
+                break;
+            case "beyoncé":
+                tts.setPitch(1.1f);
+                tts.setSpeechRate(1.0f);
+                break;
+            case "tom hanks":
+                tts.setPitch(1.0f);
+                tts.setSpeechRate(0.95f);
+                break;
+            default:
+                tts.setPitch(1.0f);
+                tts.setSpeechRate(1.0f);
+        }
+
+        File audioFile = new File(getContext().getCacheDir(), "birthday_wish_" + System.currentTimeMillis() + ".wav");
+        CountDownLatch latch = new CountDownLatch(1);
+
+        int result = tts.synthesizeToFile(message, null, audioFile, "birthday_wish");
+        if (result == TextToSpeech.SUCCESS) {
+            try {
+                latch.await(5, java.util.concurrent.TimeUnit.SECONDS); // Wait for synthesis
+                if (audioFile.exists() && audioFile.length() > 0) {
+                    return audioFile;
+                } else {
+                    Log.e(TAG, "Audio file not created or empty");
+                    return null;
+                }
+            } catch (InterruptedException e) {
+                Log.e(TAG, "Interrupted while waiting for audio synthesis", e);
+                return null;
+            }
+        } else {
+            Log.e(TAG, "TTS synthesis failed with result: " + result);
+            return null;
+        }
+    }
+
+    private void scheduleMessageNotification(Birthday birthday, String audioFilePath) {
         Intent intent = new Intent(getContext(), MessageNotificationReceiver.class);
         intent.putExtra("name", birthday.getName());
-        intent.putExtra("message", message);
+        intent.putExtra("audioFilePath", audioFilePath);
         intent.putExtra("phoneNumber", birthday.getPhoneNumber());
         intent.putExtra("notificationId", (birthday.getName() + "_msg").hashCode());
 
@@ -216,7 +315,7 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
         if (alarmManager != null) {
             try {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
-                Log.d(TAG, "Message notification scheduled for " + birthday.getName() + " at " + calendar.getTime());
+                Log.d(TAG, "Audio message notification scheduled for " + birthday.getName() + " at " + calendar.getTime());
             } catch (SecurityException e) {
                 Toast.makeText(getContext(), "Permission denied for scheduling message", Toast.LENGTH_SHORT).show();
                 Log.e(TAG, "SecurityException: " + e.getMessage());
@@ -224,6 +323,15 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
         } else {
             Log.e(TAG, "AlarmManager is null");
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        if (tts != null) {
+            tts.shutdown();
+            tts = null;
+        }
+        super.onDestroy();
     }
 
     @Override

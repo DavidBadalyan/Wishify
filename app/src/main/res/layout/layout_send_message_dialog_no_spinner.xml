@@ -8,7 +8,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Schedule Birthday Message"
+        android:text="Schedule Audio Birthday Wish"
         android:textSize="20sp"
         android:textStyle="bold"
         android:layout_gravity="center"/>
@@ -19,10 +19,16 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:padding="10dp"
-        android:hint="Enter your message"
+        android:hint="Edit your message"
         android:inputType="textMultiLine"
         android:background="@drawable/black_rounded_et"
         android:minLines="3" />
+
+    <Spinner
+        android:id="@+id/spinner_celebrity"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp" />
 
     <LinearLayout
         android:layout_width="match_parent"

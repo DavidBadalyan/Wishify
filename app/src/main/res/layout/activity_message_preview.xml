@@ -9,21 +9,22 @@
         android:id="@+id/tv_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Birthday Message"
+        android:text="Birthday Audio Wish"
         android:textSize="20sp"
         android:textStyle="bold"
         android:layout_gravity="center" />
 
-    <EditText
-        android:id="@+id/et_message_preview"
-        android:layout_width="match_parent"
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_play_wish"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="center"
         android:layout_marginTop="16dp"
-        android:padding="10dp"
-        android:hint="Edit your message"
-        android:inputType="textMultiLine"
-        android:background="@drawable/black_rounded_et"
-        android:minLines="3" />
+        android:background="@drawable/button_gradient"
+        android:backgroundTint="@null"
+        android:text="Play Wish"
+        android:textColor="#FFFFFF"
+        android:textAllCaps="false" />
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_share_via"

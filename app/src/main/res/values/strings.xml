@@ -1,12 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Wishify</string>
-
-    <string-array name="celebrity_list">
-        <item>Select a celebrity</item>
-        <item>Morgan Freeman</item>
-        <item>Scarlett Johansson</item>
-        <item>Chris Hemsworth</item>
-        <item>Beyoncé</item>
-        <item>Tom Hanks</item>
-    </string-array>
 </resources>
