@@ -45,7 +45,7 @@
             android:name=".receivers.MessageNotificationReceiver"
             android:exported="false" />
         <activity
-            android:name=".fragments.MessagePreviewActivity"
+            android:name=".activities.MessagePreviewActivity"
             android:exported="true" />
 
 

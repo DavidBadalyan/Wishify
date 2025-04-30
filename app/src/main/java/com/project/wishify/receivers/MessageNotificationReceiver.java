@@ -7,17 +7,19 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
-import com.project.wishify.fragments.MessagePreviewActivity;
+import com.project.wishify.activities.MessagePreviewActivity;
 
 public class MessageNotificationReceiver extends BroadcastReceiver {
     private static final String CHANNEL_ID = "message_notification_channel";
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        Log.d("MessageNotificationReceiver", "Notification received: " + intent.getExtras());
         String name = intent.getStringExtra("name");
         String audioFilePath = intent.getStringExtra("audioFilePath");
         String phoneNumber = intent.getStringExtra("phoneNumber");
@@ -28,6 +30,7 @@ public class MessageNotificationReceiver extends BroadcastReceiver {
         activityIntent.putExtra("audioFilePath", audioFilePath);
         activityIntent.putExtra("phoneNumber", phoneNumber);
         activityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        Log.d("MessageNotificationReceiver", "Intent extras: name=" + name + ", audioFilePath=" + audioFilePath + ", phoneNumber=" + phoneNumber);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 context,
@@ -35,6 +38,8 @@ public class MessageNotificationReceiver extends BroadcastReceiver {
                 activityIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
+
+        Log.d("MessageNotificationReceiver", "PendingIntent created with notificationId: " + notificationId);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(

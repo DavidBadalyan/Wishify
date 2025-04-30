@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Wishify</string>
+
+    <string-array name="message_formats">
+        <item>Select a format</item>
+        <item>Text</item>
+        <item>Audio</item>
+        <item>Video</item>
+    </string-array>
 </resources>

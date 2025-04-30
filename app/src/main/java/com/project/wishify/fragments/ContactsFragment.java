@@ -35,7 +35,12 @@ import com.project.wishify.adapters.ContactsAdapter;
 import com.project.wishify.classes.Birthday;
 import com.project.wishify.receivers.MessageNotificationReceiver;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -45,12 +50,22 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
 public class ContactsFragment extends Fragment implements ContactsAdapter.OnCustomizeClickListener {
     private RecyclerView recyclerView;
     private ContactsAdapter adapter;
     private List<Birthday> birthdayList;
     private DatabaseReference databaseReference;
     private TextToSpeech tts;
+    private static final String HUGGING_FACE_API_URL = "https://api-inference.huggingface.co/models/gpt2";
+    private static final String HUGGING_FACE_API_TOKEN = "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";
 
     private void fetchBirthdays() {
         databaseReference = FirebaseDatabase.getInstance().getReference("birthdays");
@@ -178,9 +193,26 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
         Button cancelButton = dialogView.findViewById(R.id.cancel_button);
         Button scheduleButton = dialogView.findViewById(R.id.schedule_button);
 
-        // Pre-fill with AI-generated wish
-        etMessage.setText(generateAIWish(birthday.getName()));
+        // Show loading message while fetching AI-generated wish
+        etMessage.setText("Generating wish...");
 
+        // Fetch AI-generated wish asynchronously
+        generateAIWish(birthday.getName(), new WishCallback() {
+            @Override
+            public void onWishGenerated(String wish) {
+                requireActivity().runOnUiThread(() -> etMessage.setText(wish));
+            }
+
+            @Override
+            public void onError(String error) {
+                requireActivity().runOnUiThread(() -> {
+                    etMessage.setText("Failed to generate wish: " + error);
+                    Toast.makeText(getContext(), "Failed to generate wish", Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+
+        // Rest of the method remains unchanged
         ArrayAdapter<CharSequence> celebrityAdapter = ArrayAdapter.createFromResource(
                 requireContext(),
                 R.array.celebrity_list,
@@ -219,26 +251,103 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
         dialog.show();
     }
 
-    private String generateAIWish(String name) {
-        // Rule-based "AI" wish generator
-        Random random = new Random();
-        String[] greetings = {"Happy birthday", "Wishing you a fantastic birthday", "Cheers to your special day"};
+    // Callback interface for async wish generation
+    private interface WishCallback {
+        void onWishGenerated(String wish);
+        void onError(String error);
+    }
+
+    private void generateAIWish(String name, WishCallback callback) {
+        // Configure OkHttpClient with increased timeouts and retry
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS) // Increase connection timeout
+                .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)   // Increase read timeout
+                .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)  // Increase write timeout
+                .retryOnConnectionFailure(true)                           // Enable retry on failure
+                .build();
+
+        String prompt = "Generate a short, heartfelt birthday wish for " + name + ". The message should be positive, concise (under 50 words), and suitable for sending to a friend. Avoid advertisements or irrelevant content.";
+
+        JSONObject json = new JSONObject();
+        try {
+            json.put("inputs", prompt);
+            json.put("max_length", 50);
+            json.put("min_length", 20);
+            json.put("num_return_sequences", 1);
+        } catch (JSONException e) {
+            Log.e(TAG, "JSON creation failed: " + e.getMessage());
+            callback.onError("JSON error");
+            return;
+        }
+
+        RequestBody body = RequestBody.create(
+                json.toString(),
+                MediaType.parse("application/json")
+        );
+
+        Request request = new Request.Builder()
+                .url(HUGGING_FACE_API_URL)
+                .header("Authorization", "Bearer " + HUGGING_FACE_API_TOKEN)
+                .post(body)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                Log.e(TAG, "API call failed: " + e.getMessage());
+                requireActivity().runOnUiThread(() -> callback.onError("Network error: " + e.getMessage()));
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    Log.e(TAG, "API response unsuccessful: " + response.code());
+                    requireActivity().runOnUiThread(() -> callback.onError("API error: " + response.code()));
+                    return;
+                }
+
+                try {
+                    String responseBody = response.body().string();
+                    Log.d(TAG, "Raw API response: " + responseBody);
+                    JSONArray jsonArray = new JSONArray(responseBody);
+                    String generatedText = jsonArray.getJSONObject(0).getString("generated_text");
+
+                    if (generatedText.startsWith(prompt)) {
+                        generatedText = generatedText.substring(prompt.length()).trim();
+                    }
+
+                    if (isValidBirthdayWish(generatedText)) {
+                        final String finalText = generatedText;
+                        requireActivity().runOnUiThread(() -> callback.onWishGenerated(finalText));
+                    } else {
+                        Log.w(TAG, "Invalid or ad-like response: " + generatedText);
+                        requireActivity().runOnUiThread(() -> callback.onWishGenerated(getFallbackWish(name)));
+                    }
+                } catch (JSONException e) {
+                    Log.e(TAG, "JSON parsing failed: " + e.getMessage());
+                    requireActivity().runOnUiThread(() -> callback.onError("Parsing error"));
+                }
+            }
+        });
+    }
+
+    private boolean isValidBirthdayWish(String text) {
+        String[] adKeywords = {"buy now", "click here", "subscribe", "free trial", "discount", "offer"};
+        for (String keyword : adKeywords) {
+            if (text.toLowerCase().contains(keyword)) {
+                return false;
+            }
+        }
+        return text.length() <= 200 && (text.toLowerCase().contains("birthday") || text.toLowerCase().contains("happy"));
+    }
+
+    private String getFallbackWish(String name) {
         String[] wishes = {
-                "full of joy, adventure, and love",
-                "bursting with happiness and success",
-                "with endless possibilities and great moments"
+                "Happy Birthday, " + name + "! Wishing you a day full of joy and love!",
+                "Have an amazing birthday, " + name + "! May all your dreams come true!",
+                "Happy Birthday, " + name + "! Here's to a fantastic year ahead!"
         };
-        String[] closings = {
-                "Have an amazing year ahead!",
-                "Make it a day to remember!",
-                "Here’s to you!"
-        };
-
-        String greeting = greetings[random.nextInt(greetings.length)];
-        String wish = wishes[random.nextInt(wishes.length)];
-        String closing = closings[random.nextInt(closings.length)];
-
-        return String.format("%s, %s! May your day be %s. %s", greeting, name, wish, closing);
+        return wishes[new Random().nextInt(wishes.length)];
     }
 
     private File generateAudioFile(String message, String celebrity) {
@@ -279,7 +388,7 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
         int result = tts.synthesizeToFile(message, null, audioFile, "birthday_wish");
         if (result == TextToSpeech.SUCCESS) {
             try {
-                latch.await(5, java.util.concurrent.TimeUnit.SECONDS); // Wait for synthesis
+                latch.await(5, java.util.concurrent.TimeUnit.SECONDS);
                 if (audioFile.exists() && audioFile.length() > 0) {
                     return audioFile;
                 } else {
