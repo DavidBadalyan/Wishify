@@ -25,6 +25,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -68,7 +69,8 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
     private static final String HUGGING_FACE_API_TOKEN = "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";
 
     private void fetchBirthdays() {
-        databaseReference = FirebaseDatabase.getInstance().getReference("birthdays");
+        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        databaseReference = FirebaseDatabase.getInstance().getReference("users").child(userId).child("birthdays");
         if (databaseReference == null) {
             Log.e(TAG, "DatabaseReference is null");
             return;

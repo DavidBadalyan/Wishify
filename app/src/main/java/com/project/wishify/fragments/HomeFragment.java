@@ -24,6 +24,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -53,7 +54,8 @@ public class HomeFragment extends Fragment {
     private AppCompatButton customizeButton;
 
     private void fetchBirthdays() {
-        databaseReference = FirebaseDatabase.getInstance().getReference("birthdays");
+        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        databaseReference = FirebaseDatabase.getInstance().getReference("users").child(userId).child("birthdays");
 
         databaseReference.addValueEventListener(new ValueEventListener() {
             @Override

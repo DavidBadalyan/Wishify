@@ -16,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.project.wishify.classes.Birthday;
@@ -37,11 +38,17 @@ public class CalendarFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-
         View view = inflater.inflate(R.layout.calendar_fragment, container, false);
         btnOpenDialog = view.findViewById(R.id.addButton);
 
-        databaseReference = FirebaseDatabase.getInstance().getReference("birthdays");
+        String userId = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+                : null;
+        if (userId == null) {
+            Toast.makeText(requireContext(), "Please log in to add birthdays", Toast.LENGTH_SHORT).show();
+            return view;
+        }
+        databaseReference = FirebaseDatabase.getInstance().getReference("users").child(userId).child("birthdays");
 
         btnOpenDialog.setOnClickListener(v -> showAddBirthdayDialog());
 
@@ -49,6 +56,11 @@ public class CalendarFragment extends Fragment {
     }
 
     private void showAddBirthdayDialog() {
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
+            Toast.makeText(requireContext(), "Please log in to add birthdays", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         LayoutInflater inflater = requireActivity().getLayoutInflater();
         View dialogView = inflater.inflate(R.layout.dialog_add_birthday, null);
@@ -59,7 +71,6 @@ public class CalendarFragment extends Fragment {
         EditText etPhone = dialogView.findViewById(R.id.et_phone);
         Button btnAddBirthday = dialogView.findViewById(R.id.btn_add_birthday);
 
-        // Set up DatePickerDialog for the birthday TextView
         tvBirthday.setOnClickListener(v -> showDatePickerDialog());
 
         AlertDialog dialog = builder.create();
@@ -104,10 +115,9 @@ public class CalendarFragment extends Fragment {
     }
 
     private void addBirthdayToFirebase(String name, String birthday, String phone) {
-        String id = databaseReference.push().getKey();
-        Birthday birthdayObj = new Birthday(id, name, birthday, phone);
-        databaseReference.child(id).setValue(birthdayObj)
+        Birthday birthdayObj = new Birthday(null, name, birthday, phone);
+        databaseReference.push().setValue(birthdayObj)
                 .addOnSuccessListener(aVoid -> Toast.makeText(requireContext(), "Birthday added!", Toast.LENGTH_SHORT).show())
-                .addOnFailureListener(e -> Toast.makeText(requireContext(), "Failed to add", Toast.LENGTH_SHORT).show());
+                .addOnFailureListener(e -> Toast.makeText(requireContext(), "Failed to add: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 }
