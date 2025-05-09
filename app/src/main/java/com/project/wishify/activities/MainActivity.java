@@ -19,6 +19,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.project.wishify.R;
 import com.project.wishify.fragments.CalendarFragment;
 import com.project.wishify.fragments.ContactsFragment;
+import com.project.wishify.fragments.GiftFragment;
 import com.project.wishify.fragments.HomeFragment;
 
 public class MainActivity extends AppCompatActivity {
@@ -112,7 +113,10 @@ public class MainActivity extends AppCompatActivity {
                             .commit();
                     return true;
                 } else if (id == R.id.nav_gift) {
-                    Toast.makeText(this, "Gifts selected", Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, "Navigating to GiftsFragment");
+                    getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, new GiftFragment())
+                            .commit();
                     return true;
                 }
                 return false;

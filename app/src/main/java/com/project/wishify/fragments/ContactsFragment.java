@@ -68,8 +68,8 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
     private List<Birthday> birthdayList;
     private DatabaseReference databaseReference;
     private TextToSpeech tts;
-    private static final String HUGGING_FACE_API_URL = "https://api-inference.huggingface.co/models/gpt2";
-    private static final String HUGGING_FACE_API_TOKEN = "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"; 
+    private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent";
+    private static final String GEMINI_API_KEY = "AIzaSyA134vyOKrkVZf6Q_gW05G_YmYrNYenDhY";
     private static final int MAX_RETRIES = 3;
 
     private void fetchBirthdays() {
@@ -199,10 +199,8 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
         Button cancelButton = dialogView.findViewById(R.id.cancel_button);
         Button scheduleButton = dialogView.findViewById(R.id.schedule_button);
 
-        // Show loading message while fetching AI-generated wish
         etMessage.setText("Generating wish...");
 
-        // Fetch AI-generated wish asynchronously
         generateAIWish(birthday.getName(), new WishCallback() {
             @Override
             public void onWishGenerated(String wish) {
@@ -256,7 +254,6 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
         dialog.show();
     }
 
-    // Callback interface for async wish generation
     private interface WishCallback {
         void onWishGenerated(String wish);
         void onError(String error);
@@ -276,16 +273,15 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                 .retryOnConnectionFailure(true)
                 .build();
 
-        String prompt = "Happy birthday, " + name + "! Write a short, heartfelt birthday wish (20-50 words) for a friend. Keep it positive, concise, and avoid advertisements.";
+        String prompt = "Write a short, heartfelt birthday wish (20-50 words) for a friend named " + name + ". Keep it positive, concise, and avoid advertisements.";
 
         JSONObject json = new JSONObject();
         try {
-            json.put("inputs", prompt);
-            json.put("max_length", 100);
-            json.put("min_length", 20);
-            json.put("num_return_sequences", 1);
-            json.put("temperature", 0.7);
-            json.put("top_p", 0.9);
+            json.put("contents", new JSONArray()
+                    .put(new JSONObject()
+                            .put("parts", new JSONArray()
+                                    .put(new JSONObject()
+                                            .put("text", prompt)))));
         } catch (JSONException e) {
             Log.e(TAG, "JSON creation failed: " + e.getMessage());
             callback.onError("JSON error");
@@ -298,9 +294,9 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
         );
 
         Request request = new Request.Builder()
-                .url(HUGGING_FACE_API_URL)
-                .header("Authorization", "Bearer " + HUGGING_FACE_API_TOKEN)
+                .url(GEMINI_API_URL + "?key=" + GEMINI_API_KEY)
                 .post(body)
+                .addHeader("Content-Type", "application/json")
                 .build();
 
         makeApiCallWithRetry(client, request, callback, name, prompt, 0);
@@ -341,24 +337,15 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                     String responseBody = response.body().string();
                     Log.d(TAG, "Raw API response: " + responseBody);
 
-                    if (responseBody.startsWith("{\"error\":")) {
-                        JSONObject errorJson = new JSONObject(responseBody);
-                        String errorMsg = errorJson.getString("error");
-                        Log.e(TAG, "API error response: " + errorMsg);
-                        if (errorMsg.contains("loading")) {
-                            makeApiCallWithRetry(client, request, callback, name, prompt, attempt + 1);
-                        } else {
-                            requireActivity().runOnUiThread(() -> callback.onError("API error: " + errorMsg));
-                        }
-                        return;
-                    }
+                    JSONObject jsonResponse = new JSONObject(responseBody);
+                    String generatedText = jsonResponse
+                            .getJSONArray("candidates")
+                            .getJSONObject(0)
+                            .getJSONObject("content")
+                            .getJSONArray("parts")
+                            .getJSONObject(0)
+                            .getString("text");
 
-                    JSONArray jsonArray = new JSONArray(responseBody);
-                    String generatedText = jsonArray.getJSONObject(0).getString("generated_text");
-
-                    if (generatedText.startsWith(prompt)) {
-                        generatedText = generatedText.substring(prompt.length()).trim();
-                    }
                     generatedText = generatedText.replaceAll("\n", " ").trim();
                     if (!generatedText.endsWith(".")) {
                         generatedText += ".";
