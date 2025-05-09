@@ -16,7 +16,7 @@
             android:layout_height="wrap_content"
             android:textSize="96dp"
             android:layout_marginTop="100dp"
-            android:text="Logo"
+            android:text="Wishify"
             android:layout_gravity="center"
             android:textAlignment="center"
             android:textColor="#127C98"
@@ -41,7 +41,7 @@
             android:layout_marginTop="80dp"
             android:background="@drawable/button_gradient"
             android:backgroundTint="@null"
-            android:text="Login"
+            android:text="Sign In"
             android:textColor="#FFFFFF"
             android:textSize="20dp" />
 

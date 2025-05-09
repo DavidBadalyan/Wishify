@@ -7,6 +7,8 @@ import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
@@ -43,13 +45,14 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -66,7 +69,8 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
     private DatabaseReference databaseReference;
     private TextToSpeech tts;
     private static final String HUGGING_FACE_API_URL = "https://api-inference.huggingface.co/models/gpt2";
-    private static final String HUGGING_FACE_API_TOKEN = "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";
+    private static final String HUGGING_FACE_API_TOKEN = "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"; 
+    private static final int MAX_RETRIES = 3;
 
     private void fetchBirthdays() {
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -208,13 +212,12 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
             @Override
             public void onError(String error) {
                 requireActivity().runOnUiThread(() -> {
-                    etMessage.setText("Failed to generate wish: " + error);
-                    Toast.makeText(getContext(), "Failed to generate wish", Toast.LENGTH_SHORT).show();
+                    etMessage.setText(getFallbackWish(birthday.getName()));
+                    Toast.makeText(getContext(), "Failed to generate wish: " + error, Toast.LENGTH_SHORT).show();
                 });
             }
         });
 
-        // Rest of the method remains unchanged
         ArrayAdapter<CharSequence> celebrityAdapter = ArrayAdapter.createFromResource(
                 requireContext(),
                 R.array.celebrity_list,
@@ -260,22 +263,29 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
     }
 
     private void generateAIWish(String name, WishCallback callback) {
-        // Configure OkHttpClient with increased timeouts and retry
+        if (!isNetworkAvailable()) {
+            Log.e(TAG, "No network connection available");
+            requireActivity().runOnUiThread(() -> callback.onError("No internet connection"));
+            return;
+        }
+
         OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS) // Increase connection timeout
-                .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)   // Increase read timeout
-                .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)  // Increase write timeout
-                .retryOnConnectionFailure(true)                           // Enable retry on failure
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .retryOnConnectionFailure(true)
                 .build();
 
-        String prompt = "Generate a short, heartfelt birthday wish for " + name + ". The message should be positive, concise (under 50 words), and suitable for sending to a friend. Avoid advertisements or irrelevant content.";
+        String prompt = "Happy birthday, " + name + "! Write a short, heartfelt birthday wish (20-50 words) for a friend. Keep it positive, concise, and avoid advertisements.";
 
         JSONObject json = new JSONObject();
         try {
             json.put("inputs", prompt);
-            json.put("max_length", 50);
+            json.put("max_length", 100);
             json.put("min_length", 20);
             json.put("num_return_sequences", 1);
+            json.put("temperature", 0.7);
+            json.put("top_p", 0.9);
         } catch (JSONException e) {
             Log.e(TAG, "JSON creation failed: " + e.getMessage());
             callback.onError("JSON error");
@@ -293,29 +303,65 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                 .post(body)
                 .build();
 
+        makeApiCallWithRetry(client, request, callback, name, prompt, 0);
+    }
+
+    private void makeApiCallWithRetry(OkHttpClient client, Request request, WishCallback callback, String name, String prompt, int attempt) {
+        if (attempt >= MAX_RETRIES) {
+            Log.e(TAG, "Max retries reached for API call");
+            requireActivity().runOnUiThread(() -> callback.onError("Max retries exceeded"));
+            return;
+        }
+
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                Log.e(TAG, "API call failed: " + e.getMessage());
-                requireActivity().runOnUiThread(() -> callback.onError("Network error: " + e.getMessage()));
+                Log.e(TAG, "API call failed (attempt " + (attempt + 1) + "): " + e.getMessage());
+                if (e.getMessage().contains("timeout") || e.getMessage().contains("network")) {
+                    makeApiCallWithRetry(client, request, callback, name, prompt, attempt + 1);
+                } else {
+                    requireActivity().runOnUiThread(() -> callback.onError("Network error: " + e.getMessage()));
+                }
             }
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 if (!response.isSuccessful()) {
-                    Log.e(TAG, "API response unsuccessful: " + response.code());
-                    requireActivity().runOnUiThread(() -> callback.onError("API error: " + response.code()));
+                    String errorBody = response.body() != null ? response.body().string() : "No error body";
+                    Log.e(TAG, "API response unsuccessful (code: " + response.code() + "): " + errorBody);
+                    if (response.code() == 503) {
+                        makeApiCallWithRetry(client, request, callback, name, prompt, attempt + 1);
+                    } else {
+                        requireActivity().runOnUiThread(() -> callback.onError("API error: " + response.code() + " - " + errorBody));
+                    }
                     return;
                 }
 
                 try {
                     String responseBody = response.body().string();
                     Log.d(TAG, "Raw API response: " + responseBody);
+
+                    if (responseBody.startsWith("{\"error\":")) {
+                        JSONObject errorJson = new JSONObject(responseBody);
+                        String errorMsg = errorJson.getString("error");
+                        Log.e(TAG, "API error response: " + errorMsg);
+                        if (errorMsg.contains("loading")) {
+                            makeApiCallWithRetry(client, request, callback, name, prompt, attempt + 1);
+                        } else {
+                            requireActivity().runOnUiThread(() -> callback.onError("API error: " + errorMsg));
+                        }
+                        return;
+                    }
+
                     JSONArray jsonArray = new JSONArray(responseBody);
                     String generatedText = jsonArray.getJSONObject(0).getString("generated_text");
 
                     if (generatedText.startsWith(prompt)) {
                         generatedText = generatedText.substring(prompt.length()).trim();
+                    }
+                    generatedText = generatedText.replaceAll("\n", " ").trim();
+                    if (!generatedText.endsWith(".")) {
+                        generatedText += ".";
                     }
 
                     if (isValidBirthdayWish(generatedText)) {
@@ -327,7 +373,7 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                     }
                 } catch (JSONException e) {
                     Log.e(TAG, "JSON parsing failed: " + e.getMessage());
-                    requireActivity().runOnUiThread(() -> callback.onError("Parsing error"));
+                    requireActivity().runOnUiThread(() -> callback.onError("Parsing error: " + e.getMessage()));
                 }
             }
         });
@@ -340,7 +386,7 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                 return false;
             }
         }
-        return text.length() <= 200 && (text.toLowerCase().contains("birthday") || text.toLowerCase().contains("happy"));
+        return text.length() <= 200;
     }
 
     private String getFallbackWish(String name) {
@@ -350,6 +396,12 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                 "Happy Birthday, " + name + "! Here's to a fantastic year ahead!"
         };
         return wishes[new Random().nextInt(wishes.length)];
+    }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager cm = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
     }
 
     private File generateAudioFile(String message, String celebrity) {
@@ -390,7 +442,7 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
         int result = tts.synthesizeToFile(message, null, audioFile, "birthday_wish");
         if (result == TextToSpeech.SUCCESS) {
             try {
-                latch.await(5, java.util.concurrent.TimeUnit.SECONDS);
+                latch.await(5, TimeUnit.SECONDS);
                 if (audioFile.exists() && audioFile.length() > 0) {
                     return audioFile;
                 } else {

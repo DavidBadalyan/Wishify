@@ -25,6 +25,12 @@ android {
                 "proguard-rules.pro"
             )
         }
+        getByName("release") {
+            buildConfigField("String", "HF_API_TOKEN", "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")
+        }
+        getByName("debug") {
+            buildConfigField("String", "HF_API_TOKEN", "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")
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

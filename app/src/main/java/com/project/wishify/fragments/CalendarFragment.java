@@ -41,13 +41,12 @@ public class CalendarFragment extends Fragment {
         View view = inflater.inflate(R.layout.calendar_fragment, container, false);
         btnOpenDialog = view.findViewById(R.id.addButton);
 
-        String userId = FirebaseAuth.getInstance().getCurrentUser() != null
-                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
-                : null;
-        if (userId == null) {
+        FirebaseAuth auth = FirebaseAuth.getInstance();
+        if (auth.getCurrentUser() == null) {
             Toast.makeText(requireContext(), "Please log in to add birthdays", Toast.LENGTH_SHORT).show();
             return view;
         }
+        String userId = auth.getCurrentUser().getUid();
         databaseReference = FirebaseDatabase.getInstance().getReference("users").child(userId).child("birthdays");
 
         btnOpenDialog.setOnClickListener(v -> showAddBirthdayDialog());
@@ -56,7 +55,8 @@ public class CalendarFragment extends Fragment {
     }
 
     private void showAddBirthdayDialog() {
-        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
+        FirebaseAuth auth = FirebaseAuth.getInstance();
+        if (auth.getCurrentUser() == null) {
             Toast.makeText(requireContext(), "Please log in to add birthdays", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -76,6 +76,11 @@ public class CalendarFragment extends Fragment {
         AlertDialog dialog = builder.create();
 
         btnAddBirthday.setOnClickListener(v -> {
+            if (auth.getCurrentUser() == null) {
+                Toast.makeText(requireContext(), "Please log in to add birthdays", Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
+                return;
+            }
             String name = etName.getText().toString().trim();
             String phone = etPhone.getText().toString().trim();
 
