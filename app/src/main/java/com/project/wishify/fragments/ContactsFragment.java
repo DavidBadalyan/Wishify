@@ -10,7 +10,6 @@ import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
-import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -43,15 +42,14 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Locale;
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
@@ -67,9 +65,10 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
     private ContactsAdapter adapter;
     private List<Birthday> birthdayList;
     private DatabaseReference databaseReference;
-    private TextToSpeech tts;
     private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent";
     private static final String GEMINI_API_KEY = "AIzaSyA134vyOKrkVZf6Q_gW05G_YmYrNYenDhY";
+    private static final String ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1/text-to-speech/%s";
+    private static final String ELEVENLABS_API_KEY = "sk_8121a7d5812bd633998612b96b961126730cd9f1077b291c";
     private static final int MAX_RETRIES = 3;
 
     private void fetchBirthdays() {
@@ -84,9 +83,7 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 birthdayList.clear();
-
                 List<Birthday> allBirthdays = new ArrayList<>();
-
                 for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
                     Birthday birthday = dataSnapshot.getValue(Birthday.class);
                     if (birthday != null && birthday.getName() != null && birthday.getDate() != null) {
@@ -95,7 +92,6 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                         Log.w(TAG, "Invalid birthday data in snapshot: " + dataSnapshot.toString());
                     }
                 }
-
                 Collections.sort(allBirthdays, new Comparator<Birthday>() {
                     @Override
                     public int compare(Birthday b1, Birthday b2) {
@@ -106,7 +102,6 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                         return b1.getName().compareToIgnoreCase(b2.getName());
                     }
                 });
-
                 birthdayList.addAll(allBirthdays);
                 Log.d(TAG, "Fetched and sorted birthdays: " + birthdayList.size());
                 if (adapter != null) {
@@ -126,43 +121,30 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        tts = new TextToSpeech(getContext(), status -> {
-            if (status == TextToSpeech.SUCCESS) {
-                tts.setLanguage(Locale.US);
-            } else {
-                Log.e(TAG, "TTS initialization failed");
-            }
-        });
     }
 
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.contacts_fragment, container, false);
-
         recyclerView = rootView.findViewById(R.id.recyclerView_birthdays);
         if (recyclerView == null) {
             Log.e(TAG, "RecyclerView is null in contacts_fragment layout");
             return rootView;
         }
-
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         birthdayList = new ArrayList<>();
         adapter = new ContactsAdapter(requireContext(), this);
         recyclerView.setAdapter(adapter);
-
         SearchView searchView = rootView.findViewById(R.id.searchView);
         if (searchView == null) {
             Log.e(TAG, "SearchView is null in contacts_fragment layout");
             return rootView;
         }
-
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
                 return false;
             }
-
             @Override
             public boolean onQueryTextChange(String newText) {
                 if (adapter != null) {
@@ -173,9 +155,7 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                 return true;
             }
         });
-
         fetchBirthdays();
-
         return rootView;
     }
 
@@ -189,24 +169,19 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
             Toast.makeText(getContext(), "Invalid contact data", Toast.LENGTH_SHORT).show();
             return;
         }
-
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.layout_send_message_dialog_no_spinner, null);
         builder.setView(dialogView);
-
         EditText etMessage = dialogView.findViewById(R.id.et_message);
         Spinner spinnerCelebrity = dialogView.findViewById(R.id.spinner_celebrity);
         Button cancelButton = dialogView.findViewById(R.id.cancel_button);
         Button scheduleButton = dialogView.findViewById(R.id.schedule_button);
-
         etMessage.setText("Generating wish...");
-
         generateAIWish(birthday.getName(), new WishCallback() {
             @Override
             public void onWishGenerated(String wish) {
                 requireActivity().runOnUiThread(() -> etMessage.setText(wish));
             }
-
             @Override
             public void onError(String error) {
                 requireActivity().runOnUiThread(() -> {
@@ -215,7 +190,6 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                 });
             }
         });
-
         ArrayAdapter<CharSequence> celebrityAdapter = ArrayAdapter.createFromResource(
                 requireContext(),
                 R.array.celebrity_list,
@@ -223,15 +197,11 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
         );
         celebrityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerCelebrity.setAdapter(celebrityAdapter);
-
         AlertDialog dialog = builder.create();
-
         cancelButton.setOnClickListener(v -> dialog.dismiss());
-
         scheduleButton.setOnClickListener(v -> {
             String message = etMessage.getText().toString().trim();
             String selectedCelebrity = spinnerCelebrity.getSelectedItem().toString();
-
             if (message.isEmpty()) {
                 Toast.makeText(getContext(), "Please enter a message", Toast.LENGTH_SHORT).show();
                 return;
@@ -240,17 +210,20 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                 Toast.makeText(getContext(), "Please select a celebrity", Toast.LENGTH_SHORT).show();
                 return;
             }
-
-            File audioFile = generateAudioFile(message, selectedCelebrity);
-            if (audioFile != null) {
-                scheduleMessageNotification(birthday, audioFile.getAbsolutePath());
-                Toast.makeText(getContext(), "Audio wish scheduled for " + birthday.getName() + " on " + birthday.getDate(), Toast.LENGTH_SHORT).show();
-                dialog.dismiss();
-            } else {
-                Toast.makeText(getContext(), "Failed to generate audio wish", Toast.LENGTH_SHORT).show();
-            }
+            // Show loading indicator
+            Toast.makeText(getContext(), "Generating audio...", Toast.LENGTH_SHORT).show();
+            generateAudioFile(message, selectedCelebrity, audioFile -> {
+                requireActivity().runOnUiThread(() -> {
+                    if (audioFile != null) {
+                        scheduleMessageNotification(birthday, audioFile.getAbsolutePath());
+                        Toast.makeText(getContext(), "Audio wish scheduled for " + birthday.getName() + " on " + birthday.getDate(), Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
+                    } else {
+                        Toast.makeText(getContext(), "Failed to generate audio wish", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            });
         });
-
         dialog.show();
     }
 
@@ -265,16 +238,13 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
             requireActivity().runOnUiThread(() -> callback.onError("No internet connection"));
             return;
         }
-
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
                 .retryOnConnectionFailure(true)
                 .build();
-
         String prompt = "Write a short, heartfelt birthday wish (20-50 words) for a friend named " + name + ". Keep it positive, concise, and avoid advertisements.";
-
         JSONObject json = new JSONObject();
         try {
             json.put("contents", new JSONArray()
@@ -287,18 +257,15 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
             callback.onError("JSON error");
             return;
         }
-
         RequestBody body = RequestBody.create(
                 json.toString(),
                 MediaType.parse("application/json")
         );
-
         Request request = new Request.Builder()
                 .url(GEMINI_API_URL + "?key=" + GEMINI_API_KEY)
                 .post(body)
                 .addHeader("Content-Type", "application/json")
                 .build();
-
         makeApiCallWithRetry(client, request, callback, name, prompt, 0);
     }
 
@@ -308,7 +275,6 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
             requireActivity().runOnUiThread(() -> callback.onError("Max retries exceeded"));
             return;
         }
-
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
@@ -319,7 +285,6 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                     requireActivity().runOnUiThread(() -> callback.onError("Network error: " + e.getMessage()));
                 }
             }
-
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 if (!response.isSuccessful()) {
@@ -332,11 +297,9 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                     }
                     return;
                 }
-
                 try {
                     String responseBody = response.body().string();
                     Log.d(TAG, "Raw API response: " + responseBody);
-
                     JSONObject jsonResponse = new JSONObject(responseBody);
                     String generatedText = jsonResponse
                             .getJSONArray("candidates")
@@ -345,12 +308,10 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                             .getJSONArray("parts")
                             .getJSONObject(0)
                             .getString("text");
-
                     generatedText = generatedText.replaceAll("\n", " ").trim();
                     if (!generatedText.endsWith(".")) {
                         generatedText += ".";
                     }
-
                     if (isValidBirthdayWish(generatedText)) {
                         final String finalText = generatedText;
                         requireActivity().runOnUiThread(() -> callback.onWishGenerated(finalText));
@@ -391,59 +352,158 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
         return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
     }
 
-    private File generateAudioFile(String message, String celebrity) {
-        if (tts == null) {
-            Log.e(TAG, "TTS not initialized");
-            return null;
+    private interface AudioCallback {
+        void onAudioGenerated(File audioFile);
+    }
+
+    private void generateAudioFile(String message, String celebrity, AudioCallback callback) {
+        if (!isNetworkAvailable()) {
+            Log.e(TAG, "No network connection available");
+            requireActivity().runOnUiThread(() -> {
+                Toast.makeText(getContext(), "No internet connection", Toast.LENGTH_SHORT).show();
+                callback.onAudioGenerated(null);
+            });
+            return;
         }
 
-        switch (celebrity.toLowerCase()) {
-            case "morgan freeman":
-                tts.setPitch(0.8f);
-                tts.setSpeechRate(0.9f);
-                break;
-            case "scarlett johansson":
-                tts.setPitch(1.2f);
-                tts.setSpeechRate(1.0f);
-                break;
-            case "chris hemsworth":
-                tts.setPitch(0.9f);
-                tts.setSpeechRate(1.0f);
-                break;
-            case "beyoncé":
-                tts.setPitch(1.1f);
-                tts.setSpeechRate(1.0f);
-                break;
-            case "tom hanks":
-                tts.setPitch(1.0f);
-                tts.setSpeechRate(0.95f);
-                break;
-            default:
-                tts.setPitch(1.0f);
-                tts.setSpeechRate(1.0f);
-        }
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .retryOnConnectionFailure(true)
+                .build();
 
-        File audioFile = new File(getContext().getCacheDir(), "birthday_wish_" + System.currentTimeMillis() + ".wav");
-        CountDownLatch latch = new CountDownLatch(1);
-
-        int result = tts.synthesizeToFile(message, null, audioFile, "birthday_wish");
-        if (result == TextToSpeech.SUCCESS) {
-            try {
-                latch.await(5, TimeUnit.SECONDS);
-                if (audioFile.exists() && audioFile.length() > 0) {
-                    return audioFile;
-                } else {
-                    Log.e(TAG, "Audio file not created or empty");
-                    return null;
-                }
-            } catch (InterruptedException e) {
-                Log.e(TAG, "Interrupted while waiting for audio synthesis", e);
-                return null;
+        String voiceId;
+        JSONObject voiceSettings = new JSONObject();
+        try {
+            switch (celebrity.toLowerCase()) {
+                case "morgan freeman":
+                    voiceId = "pNInz6obpgDQGcFmaJgB"; // Adam: deep, resonant male
+                    voiceSettings.put("stability", 0.5);
+                    voiceSettings.put("similarity_boost", 0.8);
+                    break;
+                case "scarlett johansson":
+                    voiceId = "21m00Tcm4TlvDq8ikWAM"; // Rachel: warm, expressive female
+                    voiceSettings.put("stability", 0.6);
+                    voiceSettings.put("similarity_boost", 0.9);
+                    break;
+                case "chris hemsworth":
+                    voiceId = "7bcWfrK4R6rW3w6te7Ea"; // Clyde: Australian male
+                    voiceSettings.put("stability", 0.5);
+                    voiceSettings.put("similarity_boost", 0.8);
+                    break;
+                case "beyoncé":
+                    voiceId = "XB0fDUnXU5powFXDhCwa"; // Bella: vibrant, expressive female
+                    voiceSettings.put("stability", 0.6);
+                    voiceSettings.put("similarity_boost", 0.9);
+                    break;
+                case "tom hanks":
+                    voiceId = "zrHiDhphv9ZnVXBqCLjz"; // Antoni: calm, friendly male
+                    voiceSettings.put("stability", 0.5);
+                    voiceSettings.put("similarity_boost", 0.8);
+                    break;
+                default:
+                    voiceId = "EXAVITQu4vr4xnSDxMaL"; // Aria: neutral female
+                    voiceSettings.put("stability", 0.5);
+                    voiceSettings.put("similarity_boost", 0.8);
             }
-        } else {
-            Log.e(TAG, "TTS synthesis failed with result: " + result);
-            return null;
+        } catch (JSONException e) {
+            Log.e(TAG, "Voice settings JSON failed: " + e.getMessage());
+            requireActivity().runOnUiThread(() -> {
+                Toast.makeText(getContext(), "Error configuring voice", Toast.LENGTH_SHORT).show();
+                callback.onAudioGenerated(null);
+            });
+            return;
         }
+
+        JSONObject json = new JSONObject();
+        try {
+            json.put("text", message);
+            json.put("model_id", "eleven_monolingual_v1");
+            json.put("voice_settings", voiceSettings);
+        } catch (JSONException e) {
+            Log.e(TAG, "Request JSON failed: " + e.getMessage());
+            requireActivity().runOnUiThread(() -> {
+                Toast.makeText(getContext(), "Error preparing audio request", Toast.LENGTH_SHORT).show();
+                callback.onAudioGenerated(null);
+            });
+            return;
+        }
+
+        RequestBody body = RequestBody.create(
+                json.toString(),
+                MediaType.parse("application/json")
+        );
+
+        Request request = new Request.Builder()
+                .url(String.format(ELEVENLABS_API_URL, voiceId))
+                .post(body)
+                .addHeader("xi-api-key", ELEVENLABS_API_KEY)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "audio/mpeg")
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                Log.e(TAG, "ElevenLabs API call failed: " + e.getMessage());
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(getContext(), "Audio generation failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    callback.onAudioGenerated(null);
+                });
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                if (!response.isSuccessful()) {
+                    String errorBody = response.body() != null ? response.body().string() : "No error body";
+                    Log.e(TAG, "ElevenLabs API failed (code: " + response.code() + "): " + errorBody);
+                    requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(getContext(), "Audio generation failed: API error " + response.code(), Toast.LENGTH_SHORT).show();
+                        callback.onAudioGenerated(null);
+                    });
+                    return;
+                }
+
+                try {
+                    byte[] audioData = response.body() != null ? response.body().bytes() : null;
+                    if (audioData == null || audioData.length == 0) {
+                        Log.e(TAG, "Empty audio data received");
+                        requireActivity().runOnUiThread(() -> {
+                            Toast.makeText(getContext(), "No audio data received", Toast.LENGTH_SHORT).show();
+                            callback.onAudioGenerated(null);
+                        });
+                        return;
+                    }
+
+                    File audioFile = new File(getContext().getCacheDir(), "birthday_wish_" + System.currentTimeMillis() + ".mp3");
+                    try (FileOutputStream out = new FileOutputStream(audioFile)) {
+                        out.write(audioData);
+                    }
+
+                    if (audioFile.exists() && audioFile.length() > 0) {
+                        Log.d(TAG, "Audio file created: " + audioFile.getAbsolutePath());
+                        requireActivity().runOnUiThread(() -> callback.onAudioGenerated(audioFile));
+                    } else {
+                        Log.e(TAG, "Audio file not created or empty");
+                        requireActivity().runOnUiThread(() -> {
+                            Toast.makeText(getContext(), "Failed to save audio file", Toast.LENGTH_SHORT).show();
+                            callback.onAudioGenerated(null);
+                        });
+                    }
+                } catch (IOException e) {
+                    Log.e(TAG, "Failed to save audio file: " + e.getMessage());
+                    requireActivity().runOnUiThread(() -> {
+                        Toast.makeText(getContext(), "Error saving audio: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        callback.onAudioGenerated(null);
+                    });
+                } finally {
+                    if (response.body() != null) {
+                        response.body().close();
+                    }
+                }
+            }
+        });
     }
 
     private void scheduleMessageNotification(Birthday birthday, String audioFilePath) {
@@ -452,26 +512,21 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
         intent.putExtra("audioFilePath", audioFilePath);
         intent.putExtra("phoneNumber", birthday.getPhoneNumber());
         intent.putExtra("notificationId", (birthday.getName() + "_msg").hashCode());
-
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 getContext(),
                 (birthday.getName() + "_msg").hashCode(),
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
-
         AlarmManager alarmManager = (AlarmManager) getContext().getSystemService(Context.ALARM_SERVICE);
-
         String[] dateParts = birthday.getDate().split("-");
         int month = Integer.parseInt(dateParts[0]);
         int day = Integer.parseInt(dateParts[1]);
         int year = Calendar.getInstance().get(Calendar.YEAR);
         int currentMonth = Calendar.getInstance().get(Calendar.MONTH);
-
         if (currentMonth > month - 1) {
             year += 1;
         }
-
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.YEAR, year);
         calendar.set(Calendar.MONTH, month - 1);
@@ -479,7 +534,6 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
         calendar.set(Calendar.HOUR_OF_DAY, 9);
         calendar.set(Calendar.MINUTE, 0);
         calendar.set(Calendar.SECOND, 0);
-
         if (alarmManager != null) {
             try {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
@@ -493,10 +547,6 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
 
     @Override
     public void onDestroy() {
-        if (tts != null) {
-            tts.shutdown();
-            tts = null;
-        }
         super.onDestroy();
     }
 
