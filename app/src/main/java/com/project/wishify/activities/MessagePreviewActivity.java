@@ -1,12 +1,12 @@
 package com.project.wishify.activities;
 
 import android.content.Intent;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.VideoView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
@@ -15,11 +15,10 @@ import androidx.core.content.FileProvider;
 import com.project.wishify.R;
 
 import java.io.File;
-import java.io.IOException;
 
 public class MessagePreviewActivity extends AppCompatActivity {
-    private MediaPlayer mediaPlayer;
-    private String audioFilePath;
+    private VideoView videoView;
+    private String videoFilePath;
     private String message;
 
     @Override
@@ -30,21 +29,23 @@ public class MessagePreviewActivity extends AppCompatActivity {
         TextView tvTitle = findViewById(R.id.tv_title);
         TextView tvMessage = findViewById(R.id.tv_message);
         AppCompatButton btnShareVia = findViewById(R.id.btn_share_via);
-        AppCompatButton btnPlayWish = findViewById(R.id.btn_play_wish);
+        videoView = findViewById(R.id.video_view);
 
         Intent intent = getIntent();
         String name = intent.getStringExtra("name");
-        audioFilePath = intent.getStringExtra("audioFilePath");
+        videoFilePath = intent.getStringExtra("videoFilePath");
         message = intent.getStringExtra("message");
         String phoneNumber = intent.getStringExtra("phoneNumber");
 
         tvTitle.setText("Birthday Wish for " + (name != null ? name : "Friend"));
 
-        if (audioFilePath != null && new File(audioFilePath).exists()) {
-            btnPlayWish.setVisibility(View.VISIBLE);
-            btnPlayWish.setOnClickListener(v -> playAudioWish());
+        if (videoFilePath != null && new File(videoFilePath).exists()) {
+            videoView.setVisibility(View.VISIBLE);
+            videoView.setVideoPath(videoFilePath);
+            videoView.setOnPreparedListener(mp -> videoView.start());
+            videoView.setOnCompletionListener(mp -> videoView.start()); // Loop video
         } else {
-            btnPlayWish.setVisibility(View.GONE);
+            videoView.setVisibility(View.GONE);
         }
 
         if (message != null && !message.isEmpty()) {
@@ -54,7 +55,7 @@ public class MessagePreviewActivity extends AppCompatActivity {
             tvMessage.setVisibility(View.GONE);
         }
 
-        if ((audioFilePath != null && new File(audioFilePath).exists()) || (message != null && !message.isEmpty())) {
+        if ((videoFilePath != null && new File(videoFilePath).exists()) || (message != null && !message.isEmpty())) {
             btnShareVia.setVisibility(View.VISIBLE);
             btnShareVia.setOnClickListener(v -> shareWish());
         } else {
@@ -63,35 +64,18 @@ public class MessagePreviewActivity extends AppCompatActivity {
         }
     }
 
-    private void playAudioWish() {
-        if (mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
-        mediaPlayer = new MediaPlayer();
-        try {
-            mediaPlayer.setDataSource(audioFilePath);
-            mediaPlayer.prepare();
-            mediaPlayer.start();
-            mediaPlayer.setOnCompletionListener(mp -> releaseMediaPlayer());
-        } catch (IOException e) {
-            Toast.makeText(this, "Error playing audio: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            releaseMediaPlayer();
-        }
-    }
-
     private void shareWish() {
         Intent shareIntent = new Intent(Intent.ACTION_SEND);
 
-        if (audioFilePath != null && new File(audioFilePath).exists()) {
-            File audioFile = new File(audioFilePath);
-            Uri audioUri = FileProvider.getUriForFile(
+        if (videoFilePath != null && new File(videoFilePath).exists()) {
+            File videoFile = new File(videoFilePath);
+            Uri videoUri = FileProvider.getUriForFile(
                     this,
                     getPackageName() + ".fileprovider",
-                    audioFile
+                    videoFile
             );
-            shareIntent.setType("audio/*");
-            shareIntent.putExtra(Intent.EXTRA_STREAM, audioUri);
+            shareIntent.setType("video/*");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, videoUri);
         } else if (message != null && !message.isEmpty()) {
             shareIntent.setType("text/plain");
             shareIntent.putExtra(Intent.EXTRA_TEXT, message);
@@ -104,16 +88,27 @@ public class MessagePreviewActivity extends AppCompatActivity {
         startActivity(Intent.createChooser(shareIntent, "Share birthday wish"));
     }
 
-    private void releaseMediaPlayer() {
-        if (mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (videoView != null && videoView.isPlaying()) {
+            videoView.pause();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (videoView != null && !videoView.isPlaying()) {
+            videoView.start();
         }
     }
 
     @Override
     protected void onDestroy() {
-        releaseMediaPlayer();
+        if (videoView != null) {
+            videoView.stopPlayback();
+        }
         super.onDestroy();
     }
 }

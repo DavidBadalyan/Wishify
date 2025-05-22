@@ -49,6 +49,7 @@ dependencies {
     implementation("androidx.activity:activity:1.9.0")
     implementation("androidx.fragment:fragment:1.7.0")
     implementation("org.jetbrains:annotations:24.1.0")
+    implementation("com.applandeo:material-calendar-view:1.9.0")
     implementation("androidx.browser:browser:1.8.0")
     implementation("androidx.work:work-runtime:2.9.0")
     implementation("androidx.work:work-runtime:2.8.1")

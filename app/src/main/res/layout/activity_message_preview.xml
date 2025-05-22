@@ -22,17 +22,11 @@
         android:textSize="16sp"
         android:visibility="gone" />
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_play_wish"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
+    <VideoView
+        android:id="@+id/video_view"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
         android:layout_marginTop="16dp"
-        android:background="@drawable/button_gradient"
-        android:backgroundTint="@null"
-        android:text="Play Audio Wish"
-        android:textColor="#FFFFFF"
-        android:textAllCaps="false"
         android:visibility="gone" />
 
     <androidx.appcompat.widget.AppCompatButton

@@ -6,35 +6,39 @@
 
     <androidx.cardview.widget.CardView
         android:id="@+id/calendarCard"
-        android:layout_width="match_parent"
+        android:layout_width="600dp"
         android:layout_height="wrap_content"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="6dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="#CCFFFFFF"
         android:layout_margin="16dp"
-        android:background="@color/white"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="@color/white"
-            android:layout_gravity="center">
+            android:padding="8dp">
 
-            <CalendarView
-                android:id="@+id/calendarView"
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:background="@color/white"
-                android:dateTextAppearance="@style/CalendarDateTextAppearance"
-                android:weekDayTextAppearance="@style/CalendarWeekDayTextAppearance"
-                android:focusedMonthDateColor="@color/black"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
+                android:background="#80006699">
+
+                <com.applandeo.materialcalendarview.CalendarView
+                    android:id="@+id/calendarView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:headerColor="@android:color/transparent"
+                    app:headerLabelColor="#FFFFFF"
+                    app:daysLabelsColor="#626262"
+                    app:selectionColor="#BF4747"
+                    app:todayLabelColor="#FA4E66"
+                    app:eventsEnabled="true" />
+
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/birthdayName"
@@ -45,27 +49,23 @@
                 android:textColor="@android:color/black"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="16dp"
-                android:layout_marginBottom="16dp"
-                app:layout_constraintTop_toBottomOf="@id/calendarView"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
+                android:layout_marginBottom="16dp" />
 
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/addButton"
-        android:layout_width="0dp"
-        android:layout_height="60dp"
+        android:layout_width="600dp"
+        android:layout_height="80dp"
         android:textAllCaps="false"
         android:layout_marginTop="16dp"
-        android:background="@drawable/white_outline_btn"
+        android:background="@drawable/button_gradient_outline"
         android:backgroundTint="@null"
-        android:text="Add Birthday"
-        android:textAlignment="textStart"
+        android:text="🎂Add Birthday"
+        android:textAlignment="center"
         android:textColor="#FFFFFF"
-        android:textSize="20dp"
-        android:drawableStart="@drawable/add"
+        android:textSize="20sp"
         android:drawablePadding="18dp"
         android:paddingStart="20dp"
         app:layout_constraintBottom_toBottomOf="parent"

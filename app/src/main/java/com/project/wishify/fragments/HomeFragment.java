@@ -80,7 +80,7 @@ public class HomeFragment extends Fragment {
                     }
                 });
 
-                birthdayList.addAll(allBirthdays.subList(0, Math.min(7, allBirthdays.size())));
+                birthdayList.addAll(allBirthdays.subList(0, Math.min(4, allBirthdays.size())));
                 Log.d(TAG, "Fetched and filtered birthdays: " + birthdayList.size());
                 adapter.notifyDataSetChanged();
             }

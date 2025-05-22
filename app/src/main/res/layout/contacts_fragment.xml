@@ -2,49 +2,56 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@android:color/transparent">
 
     <TextView
         android:id="@+id/contacts"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="CONTACTS"
-        android:textColor="#127C98"
-        android:textSize="25dp"
+        android:text="Contacts"
+        android:textColor="#FFFFFF"
+        android:textSize="50sp"
         android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginStart="16dp" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp" />
 
-    <androidx.appcompat.widget.SearchView
-        android:id="@+id/searchView"
-        android:layout_width="0dp"
+    <EditText
+        android:id="@+id/searchEditText"
+        android:layout_width="600dp"
         android:layout_height="48dp"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="12dp"
         android:layout_marginEnd="16dp"
         android:background="@drawable/rounded_search_background"
-        android:theme="@style/SearchViewStyle"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+        android:textColor="#3C3C3C"
+        android:textSize="16sp"
+        android:hint="Search by name..."
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:singleLine="true"
+        android:textColorHint="#B37A7A7A"
         app:layout_constraintTop_toBottomOf="@id/contacts"
-        app:queryHint="Search contacts..." />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView_birthdays"
-        android:layout_width="0dp"
+        android:layout_width="600dp"
         android:layout_height="0dp"
-        android:layout_marginStart="8dp"
+        android:layout_marginStart="16dp"
         android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
-        android:background="@drawable/card_background"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="20dp"
+        android:background="@android:color/transparent"
         android:overScrollMode="ifContentScrolls"
         android:paddingBottom="8dp"
         android:scrollbars="vertical"
+        app:layout_constraintTop_toBottomOf="@id/searchEditText"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/searchView"
-        android:layout_marginBottom="20dp"/>
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

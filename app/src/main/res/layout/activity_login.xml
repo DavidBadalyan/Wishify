@@ -2,24 +2,34 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/background_image_sign"
     android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        android:background="@drawable/background_gradient"
+        android:gravity="center_vertical"
         android:paddingBottom="16dp">
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:textSize="25dp"
+            android:text="Welcome Back!"
+            android:layout_gravity="center"
+            android:textAlignment="center"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:textSize="96dp"
-            android:layout_marginTop="30dp"
             android:text="Wishify"
             android:layout_gravity="center"
             android:textAlignment="center"
-            android:textColor="#127C98"
+            android:textColor="#FFFFFF"
             android:textStyle="bold"/>
 
         <EditText
@@ -46,7 +56,7 @@
             android:layout_width="330dp"
             android:layout_height="60dp"
             android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="30dp"
+            android:layout_marginTop="20dp"
             android:background="@drawable/rounded_edittext"
             android:drawableStart="@drawable/lock"
             android:drawablePadding="10dp"
@@ -65,7 +75,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="40dp"
+            android:layout_marginTop="80dp"
             android:layout_gravity="center"
             android:layout_marginHorizontal="20dp">
 
@@ -87,29 +97,29 @@
         </LinearLayout>
 
         <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/loginButton"
-            android:layout_width="251dp"
-            android:layout_height="65dp"
-            android:layout_gravity="center"
-            android:layout_marginTop="60dp"
-            android:background="@drawable/button_gradient"
-            android:backgroundTint="@null"
-            android:text="Sign In"
-            android:textColor="#FFFFFF"
-            android:textSize="20dp" />
+        android:id="@+id/loginButton"
+        android:layout_width="251dp"
+        android:layout_height="65dp"
+        android:layout_gravity="center"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/button_gradient"
+        android:backgroundTint="@null"
+        android:text="Sign In"
+        android:textColor="#FFFFFF"
+        android:textSize="20dp" />
 
         <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/goToRegister"
-            android:layout_width="300dp"
-            android:layout_height="65dp"
-            android:layout_marginTop="30dp"
-            android:layout_marginBottom="16dp"
-            android:layout_gravity="center"
-            android:background="@android:color/transparent"
-            android:backgroundTint="@null"
-            android:text="Don't have an account? Sign up"
-            android:textColor="#FFFFFF"
-            android:textSize="14dp" />
+        android:id="@+id/goToRegister"
+        android:layout_width="300dp"
+        android:layout_height="65dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="16dp"
+        android:layout_gravity="center"
+        android:background="@android:color/transparent"
+        android:backgroundTint="@null"
+        android:text="Don't have an account? Sign up"
+        android:textColor="#FFFFFF"
+        android:textSize="14dp" />
 
     </LinearLayout>
 </ScrollView>

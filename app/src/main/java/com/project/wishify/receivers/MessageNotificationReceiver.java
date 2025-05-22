@@ -21,16 +21,16 @@ public class MessageNotificationReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         Log.d("MessageNotificationReceiver", "Notification received: " + intent.getExtras());
         String name = intent.getStringExtra("name");
-        String audioFilePath = intent.getStringExtra("audioFilePath");
+        String videoFilePath = intent.getStringExtra("videoFilePath");
         String phoneNumber = intent.getStringExtra("phoneNumber");
         int notificationId = intent.getIntExtra("notificationId", 0);
 
         Intent activityIntent = new Intent(context, MessagePreviewActivity.class);
         activityIntent.putExtra("name", name);
-        activityIntent.putExtra("audioFilePath", audioFilePath);
+        activityIntent.putExtra("videoFilePath", videoFilePath);
         activityIntent.putExtra("phoneNumber", phoneNumber);
         activityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        Log.d("MessageNotificationReceiver", "Intent extras: name=" + name + ", audioFilePath=" + audioFilePath + ", phoneNumber=" + phoneNumber);
+        Log.d("MessageNotificationReceiver", "Intent extras: name=" + name + ", videoFilePath=" + videoFilePath + ", phoneNumber=" + phoneNumber);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 context,
@@ -52,8 +52,8 @@ public class MessageNotificationReceiver extends BroadcastReceiver {
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle("Birthday Audio Wish for " + name)
-                .setContentText("Tap to review and send your audio wish")
+                .setContentTitle("Birthday Video Wish for " + name)
+                .setContentText("Tap to review and send your video wish")
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true);

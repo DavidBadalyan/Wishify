@@ -7,6 +7,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Canvas;
 import android.graphics.Typeface;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -19,6 +20,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -45,9 +47,9 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
     private static final String PREFS_NAME = "BirthdayReminders";
     private static final String REMINDER_KEY = "reminder_";
     private DatabaseReference databaseReference;
-    private int selectedPosition = -1;
     private Context context;
     private OnCustomizeClickListener customizeClickListener;
+    private int swipedPosition = -1; // Track the currently swiped item
 
     public interface OnCustomizeClickListener {
         void onCustomizeClicked(Birthday birthday);
@@ -70,6 +72,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
         originalBirthdayList.addAll(newList);
         filteredBirthdayList.clear();
         filteredBirthdayList.addAll(newList);
+        resetSwipe(); // Reset swipe when list updates
         notifyDataSetChanged();
         Log.d(TAG, "Updated list with " + newList.size() + " birthdays");
     }
@@ -87,7 +90,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                 }
             }
         }
-        selectedPosition = -1;
+        resetSwipe(); // Reset swipe when filtering
         notifyDataSetChanged();
         Log.d(TAG, "Filtered list to " + filteredBirthdayList.size() + " birthdays with query: " + query);
     }
@@ -120,42 +123,54 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         birthdayRow.setOrientation(LinearLayout.HORIZONTAL);
 
+        // Name TextView
         TextView tvName = new TextView(holder.itemView.getContext());
         tvName.setLayoutParams(new LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         tvName.setText(birthday.getName() != null ? birthday.getName() : "Unknown");
-        tvName.setTextColor(0xFF000000);
+        tvName.setTextColor(0xFFFFFFFF); // White color
         tvName.setTextSize(18);
-        tvName.setTypeface(Typeface.DEFAULT_BOLD);
+        tvName.setTypeface(Typeface.DEFAULT_BOLD); // Bold for name
 
+        // Date TextView
         TextView tvDate = new TextView(holder.itemView.getContext());
         tvDate.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        tvDate.setText(birthday.getDate() != null ? birthday.getDate() : "N/A");
+        String formattedDate = formatDate(birthday.getDate()); // Format the date
+        tvDate.setText(formattedDate);
+        tvDate.setTextColor(0xFFFFFFFF); // White color
         tvDate.setTextSize(16);
+        tvDate.setTypeface(Typeface.DEFAULT); // Thin for date
 
         birthdayRow.addView(tvName);
         birthdayRow.addView(tvDate);
 
         holder.birthdayListContainer.addView(birthdayRow);
 
-        holder.buttonsContainer.setVisibility(position == selectedPosition ? View.VISIBLE : View.GONE);
+        // Control visibility and translation
+        boolean isSwiped = position == swipedPosition;
+        holder.buttonsContainer.setVisibility(isSwiped ? View.VISIBLE : View.GONE);
+        holder.birthdayListContainer.setTranslationX(isSwiped ? -getSwipeDistance() : 0f);
 
-        holder.itemView.setOnClickListener(v -> {
-            if (selectedPosition == position) {
-                selectedPosition = -1;
-            } else {
-                selectedPosition = position;
+        // Tap to reset swipe
+        holder.birthdayListContainer.setOnClickListener(v -> {
+            if (swipedPosition == holder.getAdapterPosition()) {
+                resetSwipe();
             }
-            notifyDataSetChanged();
-            Log.d(TAG, "Toggled buttons visibility for position " + position + ", selectedPosition: " + selectedPosition);
         });
 
+        // Button click listeners
         holder.reminderButton.setOnClickListener(v -> {
-            Log.d("Reminder", "Button clicked");
+            int adapterPosition = holder.getAdapterPosition();
+            if (adapterPosition == RecyclerView.NO_POSITION) {
+                Log.w(TAG, "Reminder button clicked but adapter position is NO_POSITION");
+                return;
+            }
 
-            String name = birthday.getName();
-            String date = birthday.getDate();
+            Log.d("Reminder", "Button clicked");
+            Birthday currentBirthday = filteredBirthdayList.get(adapterPosition);
+            String name = currentBirthday.getName();
+            String date = currentBirthday.getDate();
             Log.d("Reminder", "Name: " + name + ", Date: " + date);
 
             if (date == null || !date.matches("\\d{2}-\\d{2}")) {
@@ -182,7 +197,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
             if (context != null) {
                 Log.d("Reminder", "Setting birthday reminder...");
                 try {
-                    setBirthdayReminder(context, name, Integer.parseInt(day), parsedMonth, year);
+                    setBirthdayReminder(context, name, Integer.parseInt(day), parsedMonth, year, currentBirthday.getId());
                     Toast.makeText(context, "Reminder set for " + name, Toast.LENGTH_SHORT).show();
                 } catch (Exception e) {
                     Log.e("Reminder", "Error setting reminder: " + e.getMessage(), e);
@@ -192,44 +207,92 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                 Log.e("Reminder", "Context is null");
             }
             Toast.makeText(holder.itemView.getContext(),
-                    "Reminder set for " + birthday.getName() + " on " + birthday.getDate(),
+                    "Reminder set for " + name + " on " + formattedDate,
                     Toast.LENGTH_SHORT).show();
+
+            // Reset swipe after action
+            resetSwipe();
         });
 
         holder.customizeButton.setOnClickListener(v -> {
-            if (customizeClickListener != null) {
-                customizeClickListener.onCustomizeClicked(birthday);
+            int adapterPosition = holder.getAdapterPosition();
+            if (adapterPosition == RecyclerView.NO_POSITION) {
+                Log.w(TAG, "Customize button clicked but adapter position is NO_POSITION");
+                return;
             }
+            if (customizeClickListener != null) {
+                customizeClickListener.onCustomizeClicked(filteredBirthdayList.get(adapterPosition));
+            }
+            // Reset swipe after action
+            resetSwipe();
         });
 
         holder.deleteButton.setOnClickListener(v -> {
+            int adapterPosition = holder.getAdapterPosition();
+            if (adapterPosition == RecyclerView.NO_POSITION) {
+                Log.w(TAG, "Delete button clicked but adapter position is NO_POSITION");
+                return;
+            }
+            Birthday currentBirthday = filteredBirthdayList.get(adapterPosition);
             AlertDialog.Builder builder = new AlertDialog.Builder(holder.itemView.getContext());
-            builder.setMessage("Do you want to delete " + (birthday.getName() != null ? birthday.getName() : "this birthday") + "'s birthday?");
+            builder.setMessage("Do you want to delete " + (currentBirthday.getName() != null ? currentBirthday.getName() : "this birthday") + "'s birthday?");
             builder.setPositiveButton("DELETE", (dialog, which) -> {
-                deleteBirthday(holder.itemView.getContext(), birthday, position);
+                deleteBirthday(holder.itemView.getContext(), currentBirthday, adapterPosition);
             });
             builder.setNegativeButton("CANCEL", (dialog, which) -> {
                 dialog.dismiss();
+                // Reset swipe on cancel
+                resetSwipe();
             });
 
             AlertDialog dialog = builder.create();
             dialog.show();
 
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(0xFFFF0000);
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(0xFF0000FF);
+            // Set button colors after dialog is shown
+            dialog.setOnShowListener(d -> {
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(0xFFFF0000);
+                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(0xFF0000FF);
+            });
         });
     }
 
-    public void setBirthdayReminder(Context context, String name, int day, int month, int year) {
+    private String formatDate(String date) {
+        if (date == null || !date.matches("\\d{2}-\\d{2}")) {
+            return "N/A";
+        }
+
+        try {
+            SimpleDateFormat inputFormat = new SimpleDateFormat("MM-dd", Locale.getDefault());
+            Calendar inputCalendar = Calendar.getInstance();
+            inputCalendar.setTime(inputFormat.parse(date));
+
+            Calendar today = Calendar.getInstance();
+            int todayMonth = today.get(Calendar.MONTH);
+            int todayDay = today.get(Calendar.DAY_OF_MONTH);
+
+            if (inputCalendar.get(Calendar.MONTH) == todayMonth &&
+                    inputCalendar.get(Calendar.DAY_OF_MONTH) == todayDay) {
+                return "Today";
+            }
+
+            SimpleDateFormat outputFormat = new SimpleDateFormat("MMM d", Locale.getDefault());
+            return outputFormat.format(inputCalendar.getTime());
+        } catch (ParseException e) {
+            Log.e(TAG, "Error parsing date: " + date, e);
+            return "N/A";
+        }
+    }
+
+    public void setBirthdayReminder(Context context, String name, int day, int month, int year, String birthdayId) {
         Log.d("Reminder", "setBirthdayReminder called with: " + name + ", " + day + "-" + month + "-" + year);
 
         Intent intent = new Intent(context, BirthdayReminderReceiver.class);
         intent.putExtra("name", name);
-        intent.putExtra("notificationId", name.hashCode());
+        intent.putExtra("notificationId", birthdayId.hashCode());
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 context,
-                name.hashCode(),
+                birthdayId.hashCode(),
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
@@ -259,8 +322,8 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
     }
 
     private void deleteBirthday(Context context, Birthday birthday, int position) {
-        if (birthday == null || birthday.getName() == null) {
-            Log.e(TAG, "Cannot delete birthday: birthday or name is null at position " + position);
+        if (birthday == null || birthday.getName() == null || birthday.getId() == null) {
+            Log.e(TAG, "Cannot delete birthday: birthday, name, or id is null at position " + position);
             return;
         }
 
@@ -272,18 +335,20 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                 boolean deleted = false;
                 for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
                     Birthday dbBirthday = dataSnapshot.getValue(Birthday.class);
-                    if (dbBirthday != null && dbBirthday.getDate() != null && dbBirthday.getDate().equals(birthday.getDate())) {
+                    if (dbBirthday != null && dbBirthday.getDate() != null && dbBirthday.getDate().equals(birthday.getDate()) && dbBirthday.getId().equals(birthday.getId())) {
                         dataSnapshot.getRef().removeValue((error, ref) -> {
                             if (error == null) {
                                 AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
                                 Intent intent = new Intent(context, BirthdayReminderReceiver.class);
-                                PendingIntent pendingIntent = PendingIntent.getBroadcast(context, position, intent,
+                                PendingIntent pendingIntent = PendingIntent.getBroadcast(context, birthday.getId().hashCode(), intent,
                                         PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-                                alarmManager.cancel(pendingIntent);
+                                if (alarmManager != null) {
+                                    alarmManager.cancel(pendingIntent);
+                                }
 
                                 SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
                                 SharedPreferences.Editor editor = prefs.edit();
-                                editor.remove(REMINDER_KEY + position);
+                                editor.remove(REMINDER_KEY + birthday.getId().hashCode());
                                 editor.apply();
 
                                 filteredBirthdayList.remove(position);
@@ -291,6 +356,8 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                                 notifyDataSetChanged();
                                 Toast.makeText(context, "Birthday deleted", Toast.LENGTH_SHORT).show();
                                 Log.d(TAG, "Deleted birthday: " + birthday.getName());
+                                // Reset swipe after deletion
+                                resetSwipe();
                             } else {
                                 Toast.makeText(context, "Failed to delete birthday", Toast.LENGTH_SHORT).show();
                                 Log.e(TAG, "Failed to delete birthday: " + error.getMessage());
@@ -301,7 +368,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                     }
                 }
                 if (!deleted) {
-                    Log.w(TAG, "No matching birthday found to delete for name: " + birthday.getName());
+                    Log.w(TAG, "No matching birthday found to delete for name: " + birthday.getName() + ", id: " + birthday.getId());
                 }
             }
 
@@ -318,6 +385,123 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
         int size = filteredBirthdayList != null ? filteredBirthdayList.size() : 0;
         Log.d(TAG, "getItemCount: " + size);
         return size;
+    }
+
+    private float getSwipeDistance() {
+        LinearLayout buttonsContainer = new LinearLayout(context);
+        buttonsContainer.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        buttonsContainer.setOrientation(LinearLayout.HORIZONTAL);
+        buttonsContainer.setPadding(
+                (int) (8 * context.getResources().getDisplayMetrics().density),
+                (int) (8 * context.getResources().getDisplayMetrics().density),
+                (int) (8 * context.getResources().getDisplayMetrics().density),
+                (int) (8 * context.getResources().getDisplayMetrics().density));
+
+        for (int i = 0; i < 3; i++) {
+            Button button = new Button(context);
+            button.setLayoutParams(new LinearLayout.LayoutParams(
+                    (int) (40 * context.getResources().getDisplayMetrics().density),
+                    (int) (40 * context.getResources().getDisplayMetrics().density)));
+            if (i < 2) {
+                button.setPadding(0, 0, (int) (8 * context.getResources().getDisplayMetrics().density), 0);
+            }
+            buttonsContainer.addView(button);
+        }
+
+        buttonsContainer.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+        float swipeDistance = buttonsContainer.getMeasuredWidth();
+        Log.d(TAG, "Calculated swipe distance: " + swipeDistance + " pixels");
+        return swipeDistance;
+    }
+
+    public void resetSwipe() {
+        int oldSwipedPosition = swipedPosition;
+        swipedPosition = -1;
+        if (oldSwipedPosition != -1) {
+            notifyItemChanged(oldSwipedPosition);
+        }
+    }
+
+    public void attachSwipeHelper(RecyclerView recyclerView) {
+        ItemTouchHelper.SimpleCallback simpleCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+                if (position == RecyclerView.NO_POSITION) {
+                    return;
+                }
+
+                if (direction == ItemTouchHelper.LEFT) {
+                    if (swipedPosition != position) {
+                        int oldSwipedPosition = swipedPosition;
+                        swipedPosition = position;
+                        if (oldSwipedPosition != -1) {
+                            notifyItemChanged(oldSwipedPosition);
+                        }
+                        notifyItemChanged(position);
+                    }
+                } else if (direction == ItemTouchHelper.RIGHT) {
+                    if (swipedPosition == position) {
+                        resetSwipe();
+                    }
+                }
+            }
+
+            @Override
+            public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder,
+                                    float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                View foregroundView = ((ContactsViewHolder) viewHolder).birthdayListContainer;
+                View buttonsView = ((ContactsViewHolder) viewHolder).buttonsContainer;
+                float maxSwipe = -getSwipeDistance();
+
+                float clampedDX = Math.max(maxSwipe, Math.min(dX, 0f));
+
+                if (clampedDX < 0) {
+                    foregroundView.setTranslationX(clampedDX);
+                    buttonsView.setVisibility(View.VISIBLE);
+                } else {
+                    foregroundView.setTranslationX(clampedDX);
+                    buttonsView.setVisibility(View.GONE);
+                }
+
+                getDefaultUIUtil().onDraw(c, recyclerView, foregroundView, clampedDX, dY, actionState, isCurrentlyActive);
+            }
+
+            @Override
+            public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                super.clearView(recyclerView, viewHolder);
+                View foregroundView = ((ContactsViewHolder) viewHolder).birthdayListContainer;
+                View buttonsView = ((ContactsViewHolder) viewHolder).buttonsContainer;
+                if (viewHolder.getAdapterPosition() != swipedPosition) {
+                    foregroundView.setTranslationX(0f);
+                    buttonsView.setVisibility(View.GONE);
+                }
+            }
+
+            @Override
+            public float getSwipeThreshold(@NonNull RecyclerView.ViewHolder viewHolder) {
+                return 0.5f;
+            }
+
+            @Override
+            public float getSwipeEscapeVelocity(float defaultValue) {
+                return defaultValue * 8f;
+            }
+
+            @Override
+            public float getSwipeVelocityThreshold(float defaultValue) {
+                return defaultValue * 0.5f;
+            }
+        };
+
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(simpleCallback);
+        itemTouchHelper.attachToRecyclerView(recyclerView);
     }
 
     static class ContactsViewHolder extends RecyclerView.ViewHolder {
