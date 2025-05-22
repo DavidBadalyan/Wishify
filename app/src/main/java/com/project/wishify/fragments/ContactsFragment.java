@@ -391,23 +391,27 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
         // Map celebrities to different source_url images
         String sourceUrl;
         switch (celebrity.toLowerCase()) {
-            case "morgan freeman":
+            case "noelle":
                 sourceUrl = "https://create-images-results.d-id.com/api_docs/assets/noelle.jpeg";
                 break;
-            case "scarlett johansson":
-                sourceUrl = "https://create-images-results.d-id.com/api_docs/assets/alice.jpg";
+            case "bull":
+                sourceUrl = "https://create-images-results.d-id.com/DefaultPresenters/Bull_m/image.png";
                 break;
-            case "chris hemsworth":
-                sourceUrl = "https://create-images-results.d-id.com/api_docs/assets/john.jpg";
+            case "emma":
+                sourceUrl = "https://create-images-results.d-id.com/DefaultPresenters/Emma_f/image.png";
                 break;
-            case "beyoncé":
-                sourceUrl = "https://create-images-results.d-id.com/api_docs/assets/sarah.jpg";
+            case "william":
+                sourceUrl = "https://create-images-results.d-id.com/DefaultPresenters/William_m/image.png";
                 break;
-            case "tom hanks":
-                sourceUrl = "https://create-images-results.d-id.com/api_docs/assets/mike.jpg";
+            case "santa":
+                sourceUrl = "https://create-images-results.d-id.com/DefaultPresenters/FriendlySanta/image.jpg";
+                break;
+            case "sara":
+                sourceUrl = "https://create-images-results.d-id.com/DefaultPresenters/Sara_f/image.png";
                 break;
             default:
                 sourceUrl = "https://create-images-results.d-id.com/api_docs/assets/noelle.jpeg";
+                break;
         }
         Log.d(TAG, "Selected celebrity: " + celebrity + ", source_url: " + sourceUrl);
 
