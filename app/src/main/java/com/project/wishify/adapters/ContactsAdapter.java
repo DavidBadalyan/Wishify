@@ -49,7 +49,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
     private DatabaseReference databaseReference;
     private Context context;
     private OnCustomizeClickListener customizeClickListener;
-    private int swipedPosition = -1; // Track the currently swiped item
+    private int swipedPosition = -1;
 
     public interface OnCustomizeClickListener {
         void onCustomizeClicked(Birthday birthday);
@@ -72,7 +72,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
         originalBirthdayList.addAll(newList);
         filteredBirthdayList.clear();
         filteredBirthdayList.addAll(newList);
-        resetSwipe(); // Reset swipe when list updates
+        resetSwipe();
         notifyDataSetChanged();
         Log.d(TAG, "Updated list with " + newList.size() + " birthdays");
     }
@@ -90,7 +90,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                 }
             }
         }
-        resetSwipe(); // Reset swipe when filtering
+        resetSwipe();
         notifyDataSetChanged();
         Log.d(TAG, "Filtered list to " + filteredBirthdayList.size() + " birthdays with query: " + query);
     }
@@ -123,43 +123,38 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         birthdayRow.setOrientation(LinearLayout.HORIZONTAL);
 
-        // Name TextView
         TextView tvName = new TextView(holder.itemView.getContext());
         tvName.setLayoutParams(new LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         tvName.setText(birthday.getName() != null ? birthday.getName() : "Unknown");
-        tvName.setTextColor(0xFFFFFFFF); // White color
+        tvName.setTextColor(0xFFFFFFFF);
         tvName.setTextSize(18);
-        tvName.setTypeface(Typeface.DEFAULT_BOLD); // Bold for name
+        tvName.setTypeface(Typeface.DEFAULT_BOLD);
 
-        // Date TextView
         TextView tvDate = new TextView(holder.itemView.getContext());
         tvDate.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        String formattedDate = formatDate(birthday.getDate()); // Format the date
+        String formattedDate = formatDate(birthday.getDate());
         tvDate.setText(formattedDate);
-        tvDate.setTextColor(0xFFFFFFFF); // White color
+        tvDate.setTextColor(0xFFFFFFFF);
         tvDate.setTextSize(16);
-        tvDate.setTypeface(Typeface.DEFAULT); // Thin for date
+        tvDate.setTypeface(Typeface.DEFAULT);
 
         birthdayRow.addView(tvName);
         birthdayRow.addView(tvDate);
 
         holder.birthdayListContainer.addView(birthdayRow);
 
-        // Control visibility and translation
         boolean isSwiped = position == swipedPosition;
         holder.buttonsContainer.setVisibility(isSwiped ? View.VISIBLE : View.GONE);
         holder.birthdayListContainer.setTranslationX(isSwiped ? -getSwipeDistance() : 0f);
 
-        // Tap to reset swipe
         holder.birthdayListContainer.setOnClickListener(v -> {
             if (swipedPosition == holder.getAdapterPosition()) {
                 resetSwipe();
             }
         });
 
-        // Button click listeners
         holder.reminderButton.setOnClickListener(v -> {
             int adapterPosition = holder.getAdapterPosition();
             if (adapterPosition == RecyclerView.NO_POSITION) {
@@ -167,7 +162,6 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                 return;
             }
 
-            Log.d("Reminder", "Button clicked");
             Birthday currentBirthday = filteredBirthdayList.get(adapterPosition);
             String name = currentBirthday.getName();
             String date = currentBirthday.getDate();
@@ -182,20 +176,15 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
             String[] parts = date.split("-");
             String month = parts[0];
             String day = parts[1];
-            Log.d("Reminder", "Month: " + month + ", Day: " + day);
-
             int year = Calendar.getInstance().get(Calendar.YEAR);
             int currentMonth = Calendar.getInstance().get(Calendar.MONTH);
-            Log.d("Reminder", "Current year: " + year + ", Current month: " + currentMonth);
 
             int parsedMonth = Integer.parseInt(month);
             if (currentMonth > parsedMonth - 1) {
                 year += 1;
-                Log.d("Reminder", "Year incremented to: " + year);
             }
 
             if (context != null) {
-                Log.d("Reminder", "Setting birthday reminder...");
                 try {
                     setBirthdayReminder(context, name, Integer.parseInt(day), parsedMonth, year, currentBirthday.getId());
                     Toast.makeText(context, "Reminder set for " + name, Toast.LENGTH_SHORT).show();
@@ -203,14 +192,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                     Log.e("Reminder", "Error setting reminder: " + e.getMessage(), e);
                     Toast.makeText(context, "Failed to set reminder", Toast.LENGTH_SHORT).show();
                 }
-            } else {
-                Log.e("Reminder", "Context is null");
             }
-            Toast.makeText(holder.itemView.getContext(),
-                    "Reminder set for " + name + " on " + formattedDate,
-                    Toast.LENGTH_SHORT).show();
-
-            // Reset swipe after action
             resetSwipe();
         });
 
@@ -223,7 +205,6 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
             if (customizeClickListener != null) {
                 customizeClickListener.onCustomizeClicked(filteredBirthdayList.get(adapterPosition));
             }
-            // Reset swipe after action
             resetSwipe();
         });
 
@@ -241,14 +222,12 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
             });
             builder.setNegativeButton("CANCEL", (dialog, which) -> {
                 dialog.dismiss();
-                // Reset swipe on cancel
                 resetSwipe();
             });
 
             AlertDialog dialog = builder.create();
             dialog.show();
 
-            // Set button colors after dialog is shown
             dialog.setOnShowListener(d -> {
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(0xFFFF0000);
                 dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(0xFF0000FF);
@@ -356,7 +335,6 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                                 notifyDataSetChanged();
                                 Toast.makeText(context, "Birthday deleted", Toast.LENGTH_SHORT).show();
                                 Log.d(TAG, "Deleted birthday: " + birthday.getName());
-                                // Reset swipe after deletion
                                 resetSwipe();
                             } else {
                                 Toast.makeText(context, "Failed to delete birthday", Toast.LENGTH_SHORT).show();
@@ -411,7 +389,10 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
 
         buttonsContainer.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
         float swipeDistance = buttonsContainer.getMeasuredWidth();
-        Log.d(TAG, "Calculated swipe distance: " + swipeDistance + " pixels");
+        // Add a 24dp buffer to ensure full visibility of the remindBd button
+        float buffer = 24 * context.getResources().getDisplayMetrics().density;
+        swipeDistance += buffer;
+        Log.d(TAG, "Calculated swipe distance: " + swipeDistance + " pixels (including " + buffer + "px buffer)");
         return swipeDistance;
     }
 

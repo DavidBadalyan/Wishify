@@ -91,12 +91,6 @@
 
         </activity>
 
-        <activity
-            android:name=".activities.SettingsActivity"
-            android:exported="true">
-
-        </activity>
-
         <service
             android:name="androidx.work.impl.background.systemalarm.SystemAlarmService"
             android:enabled="true"

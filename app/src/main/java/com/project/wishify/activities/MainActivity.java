@@ -69,10 +69,6 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG, "Starting ProfileActivity");
                     Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
                     startActivity(intent);
-                } else if (id == R.id.nav_settings) {
-                    Log.d(TAG, "Starting SettingsActivity");
-                    Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-                    startActivity(intent);
                 } else if (id == R.id.nav_about) {
                     Log.d(TAG, "Starting AboutActivity");
                     Intent intent = new Intent(MainActivity.this, AboutActivity.class);

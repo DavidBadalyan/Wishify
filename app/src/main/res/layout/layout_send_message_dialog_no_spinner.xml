@@ -2,16 +2,18 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/card_background"
     android:orientation="vertical"
     android:padding="16dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Schedule Audio Birthday Wish"
+        android:text="Schedule Video Birthday Wish"
         android:textSize="20sp"
         android:textStyle="bold"
-        android:layout_gravity="center"/>
+        android:layout_gravity="center"
+        android:textColor="@android:color/black"/>
 
     <EditText
         android:id="@+id/et_message"
@@ -22,12 +24,15 @@
         android:hint="Edit your message"
         android:inputType="textMultiLine"
         android:background="@drawable/black_rounded_et"
-        android:minLines="3" />
+        android:minLines="3"
+        android:textColor="@android:color/black"
+        android:textColorHint="@android:color/black"/>
 
     <Spinner
         android:id="@+id/spinner_celebrity"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:textColor="@android:color/black"
         android:layout_marginTop="16dp" />
 
     <LinearLayout
