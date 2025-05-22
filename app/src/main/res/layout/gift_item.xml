@@ -5,18 +5,25 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <LinearLayout
-        android:id="@+id/ll"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"/>
-
     <TextView
-        android:id="@+id/giftTextView"
+        android:id="@+id/giftTitleTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textSize="16sp"
-        android:textColor="@android:color/black"
+        android:textStyle="bold"
+        android:textColor="@android:color/white"
+        android:gravity="center_horizontal"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp" />
+
+    <TextView
+        android:id="@+id/giftDescriptionTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textSize="14sp"
+        android:textColor="@android:color/darker_gray"
+        android:gravity="center_horizontal"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp" />
 
@@ -24,5 +31,6 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginTop="7dp"
-        android:background="#EB9D9D"/>
+        android:background="#FFFFFF" />
+
 </LinearLayout>

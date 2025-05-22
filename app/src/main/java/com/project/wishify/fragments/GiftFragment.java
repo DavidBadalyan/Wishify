@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.project.wishify.R;
 import com.project.wishify.adapters.GiftAdapter;
+import com.project.wishify.classes.GiftSuggestion;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -34,7 +35,7 @@ public class GiftFragment extends Fragment {
     private EditText preferencesEditText;
     private RecyclerView recyclerView;
     private GiftAdapter giftAdapter;
-    private List<String> giftSuggestions;
+    private List<GiftSuggestion> giftSuggestions;
     private static final String API_KEY = "AIzaSyA134vyOKrkVZf6Q_gW05G_YmYrNYenDhY";
     private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent";
 
@@ -67,7 +68,7 @@ public class GiftFragment extends Fragment {
         OkHttpClient client = new OkHttpClient();
         MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
-        String prompt = "Generate a list of 5 personalized gift ideas based on the following preferences: " + preferences + ". Each suggestion should be concise and suitable for a general audience.";
+        String prompt = "Generate a list of 10 personalized gift ideas based on the following preferences: " + preferences + ". Each suggestion should have a title in bold (wrapped in **, e.g., **Gift Title**) followed by a description.";
         JSONObject jsonBody = new JSONObject();
         try {
             jsonBody.put("contents", new JSONArray()
@@ -109,7 +110,7 @@ public class GiftFragment extends Fragment {
                                 .getJSONObject(0)
                                 .getString("text");
 
-                        List<String> suggestions = parseGiftSuggestions(generatedText);
+                        List<GiftSuggestion> suggestions = parseGiftSuggestions(generatedText);
                         getActivity().runOnUiThread(() -> {
                             giftSuggestions.clear();
                             giftSuggestions.addAll(suggestions);
@@ -127,14 +128,53 @@ public class GiftFragment extends Fragment {
         });
     }
 
-    private List<String> parseGiftSuggestions(String text) {
-        List<String> suggestions = new ArrayList<>();
+    private List<GiftSuggestion> parseGiftSuggestions(String text) {
+        List<GiftSuggestion> suggestions = new ArrayList<>();
         String[] lines = text.split("\n");
+        String title = "";
+        String description = "";
+        boolean isTitleLine = false;
+
         for (String line : lines) {
-            if (line.trim().matches("\\d+\\..*")) {
-                suggestions.add(line.trim().substring(line.indexOf(".") + 1).trim());
+            line = line.trim();
+            if (line.isEmpty()) continue;
+
+            // Check if line starts with a number and a dot (e.g., "1.")
+            if (line.matches("\\d+\\..*")) {
+                // If we have a previous suggestion, add it to the list
+                if (!title.isEmpty()) {
+                    suggestions.add(new GiftSuggestion(title, description.trim()));
+                    description = ""; // Reset description for the next suggestion
+                }
+
+                // Extract title and description
+                String content = line.substring(line.indexOf(".") + 1).trim();
+                if (content.startsWith("**") && content.contains("**:")) {
+                    // Handle title with asterisks (e.g., "**A gift card**: description")
+                    title = content.substring(2, content.indexOf("**:")).trim();
+                    description = content.substring(content.indexOf("**:") + 3).trim();
+                } else {
+                    // Handle cases without asterisks (e.g., "A gift card: description" or just a line)
+                    if (content.contains(":")) {
+                        title = content.substring(0, content.indexOf(":")).trim();
+                        description = content.substring(content.indexOf(":") + 1).trim();
+                    } else {
+                        title = content;
+                        description = "";
+                    }
+                }
+                isTitleLine = true;
+            } else if (isTitleLine) {
+                // Append to description if the line is not a new numbered item
+                description += " " + line;
             }
         }
+
+        // Add the last suggestion
+        if (!title.isEmpty()) {
+            suggestions.add(new GiftSuggestion(title, description.trim()));
+        }
+
         return suggestions;
     }
 }

@@ -9,14 +9,15 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.project.wishify.R;
+import com.project.wishify.classes.GiftSuggestion;
 
 import java.util.List;
 
 public class GiftAdapter extends RecyclerView.Adapter<GiftAdapter.GiftViewHolder> {
 
-    private List<String> giftSuggestions;
+    private List<GiftSuggestion> giftSuggestions;
 
-    public GiftAdapter(List<String> giftSuggestions) {
+    public GiftAdapter(List<GiftSuggestion> giftSuggestions) {
         this.giftSuggestions = giftSuggestions;
     }
 
@@ -30,7 +31,9 @@ public class GiftAdapter extends RecyclerView.Adapter<GiftAdapter.GiftViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull GiftViewHolder holder, int position) {
-        holder.giftTextView.setText(giftSuggestions.get(position));
+        GiftSuggestion suggestion = giftSuggestions.get(position);
+        holder.giftTitleTextView.setText(suggestion.getTitle());
+        holder.giftDescriptionTextView.setText(suggestion.getDescription());
     }
 
     @Override
@@ -39,11 +42,13 @@ public class GiftAdapter extends RecyclerView.Adapter<GiftAdapter.GiftViewHolder
     }
 
     static class GiftViewHolder extends RecyclerView.ViewHolder {
-        TextView giftTextView;
+        TextView giftTitleTextView;
+        TextView giftDescriptionTextView;
 
         GiftViewHolder(@NonNull View itemView) {
             super(itemView);
-            giftTextView = itemView.findViewById(R.id.giftTextView);
+            giftTitleTextView = itemView.findViewById(R.id.giftTitleTextView);
+            giftDescriptionTextView = itemView.findViewById(R.id.giftDescriptionTextView);
         }
     }
 }
