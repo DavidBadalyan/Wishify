@@ -34,7 +34,6 @@ import com.project.wishify.R;
 import com.project.wishify.adapters.BirthdayAdapter;
 import com.project.wishify.classes.Birthday;
 import com.project.wishify.receivers.BirthdayReminderReceiver;
-import com.project.wishify.receivers.MessageNotificationReceiver;
 import com.project.wishify.receivers.TextMessageNotificationReceiver;
 
 import java.text.ParseException;
@@ -53,14 +52,26 @@ public class HomeFragment extends Fragment {
     private List<Birthday> birthdayList;
     private DatabaseReference databaseReference;
     private AppCompatButton customizeButton;
+    private ValueEventListener birthdayListener;
 
     private void fetchBirthdays() {
-        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        FirebaseAuth auth = FirebaseAuth.getInstance();
+        if (auth.getCurrentUser() == null) {
+            Log.w(TAG, "User is not logged in, skipping fetchBirthdays");
+            return;
+        }
+
+        String userId = auth.getCurrentUser().getUid();
         databaseReference = FirebaseDatabase.getInstance().getReference("users").child(userId).child("birthdays");
 
-        databaseReference.addValueEventListener(new ValueEventListener() {
+        birthdayListener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (!isAdded()) {
+                    Log.w(TAG, "Fragment not attached, skipping onDataChange");
+                    return;
+                }
+
                 birthdayList.clear();
                 Calendar today = Calendar.getInstance();
                 today.setTime(new Date());
@@ -83,14 +94,18 @@ public class HomeFragment extends Fragment {
 
                 birthdayList.addAll(allBirthdays.subList(0, Math.min(4, allBirthdays.size())));
                 Log.d(TAG, "Fetched and filtered birthdays: " + birthdayList.size());
-                adapter.notifyDataSetChanged();
+                if (isAdded()) {
+                    adapter.notifyDataSetChanged();
+                }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
                 Log.w(TAG, "Failed to read value.", error.toException());
             }
-        });
+        };
+
+        databaseReference.addValueEventListener(birthdayListener);
     }
 
     private int compareDates(String date1, String date2, Calendar today) {
@@ -129,6 +144,7 @@ public class HomeFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        Log.d(TAG, "onCreateView called");
         View rootView = inflater.inflate(R.layout.home_fragment, container, false);
 
         recyclerView = rootView.findViewById(R.id.recyclerView_birthdays);
@@ -172,6 +188,7 @@ public class HomeFragment extends Fragment {
                     Toast.makeText(getContext(), "Reminder set for " + name, Toast.LENGTH_SHORT).show();
                 } catch (Exception e) {
                     Toast.makeText(getContext(), "Failed to set reminder", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Error setting reminder: " + e.getMessage());
                 }
             }
         });
@@ -314,7 +331,76 @@ public class HomeFragment extends Fragment {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
             } catch (SecurityException e) {
                 Toast.makeText(context, "Permission denied for alarm", Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "SecurityException: " + e.getMessage());
             }
         }
+    }
+
+    public void cleanup() {
+        Log.d(TAG, "Cleaning up HomeFragment");
+        if (databaseReference != null && birthdayListener != null) {
+            databaseReference.removeEventListener(birthdayListener);
+            Log.d(TAG, "Removed Firebase ValueEventListener");
+        }
+        cancelAllAlarms();
+    }
+
+    private void cancelAllAlarms() {
+        if (getContext() == null) {
+            Log.w(TAG, "Context is null in cancelAllAlarms");
+            return;
+        }
+
+        AlarmManager alarmManager = (AlarmManager) getContext().getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) {
+            Log.e(TAG, "AlarmManager is null in cancelAllAlarms");
+            return;
+        }
+
+        // Cancel birthday reminders
+        for (Birthday birthday : birthdayList) {
+            Intent intent = new Intent(getContext(), BirthdayReminderReceiver.class);
+            intent.putExtra("name", birthday.getName());
+            intent.putExtra("notificationId", birthday.getName().hashCode());
+
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                    getContext(),
+                    birthday.getName().hashCode(),
+                    intent,
+                    PendingIntent.FLAG_NO_CREATE | PendingIntent.FLAG_IMMUTABLE
+            );
+
+            if (pendingIntent != null) {
+                alarmManager.cancel(pendingIntent);
+                pendingIntent.cancel();
+                Log.d(TAG, "Cancelled birthday reminder for " + birthday.getName());
+            }
+        }
+
+        // Cancel message notifications
+        for (Birthday birthday : birthdayList) {
+            Intent intent = new Intent(getContext(), TextMessageNotificationReceiver.class);
+            intent.putExtra("notificationId", (birthday.getName() + "_msg").hashCode());
+
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                    getContext(),
+                    (birthday.getName() + "_msg").hashCode(),
+                    intent,
+                    PendingIntent.FLAG_NO_CREATE | PendingIntent.FLAG_IMMUTABLE
+            );
+
+            if (pendingIntent != null) {
+                alarmManager.cancel(pendingIntent);
+                pendingIntent.cancel();
+                Log.d(TAG, "Cancelled message notification for " + birthday.getName());
+            }
+        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        cleanup();
+        Log.d(TAG, "onDestroyView called");
     }
 }

@@ -10,6 +10,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.core.view.GravityCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
@@ -76,11 +78,12 @@ public class MainActivity extends AppCompatActivity {
                 } else if (id == R.id.nav_logout) {
                     try {
                         Log.d(TAG, "Logging out user");
+                        cleanupBeforeLogout();
                         auth.signOut();
                         goToLoginActivity();
                     } catch (Exception e) {
                         Toast.makeText(this, "Logout failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                        e.printStackTrace();
+                        Log.e(TAG, "Logout error: " + e.getMessage(), e);
                     }
                 }
                 drawerLayout.closeDrawer(GravityCompat.END);
@@ -132,8 +135,22 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void cleanupBeforeLogout() {
+        Log.d(TAG, "Cleaning up before logout");
+        FragmentManager fm = getSupportFragmentManager();
+        for (int i = 0; i < fm.getBackStackEntryCount(); i++) {
+            fm.popBackStack();
+        }
+        Fragment currentFragment = fm.findFragmentById(R.id.fragment_container);
+        if (currentFragment instanceof HomeFragment) {
+            ((HomeFragment) currentFragment).cleanup();
+            Log.d(TAG, "Called cleanup on HomeFragment");
+        }
+    }
+
     private void goToLoginActivity() {
         try {
+            Log.d(TAG, "Navigating to LoginActivity");
             Intent intent = new Intent(MainActivity.this, LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
