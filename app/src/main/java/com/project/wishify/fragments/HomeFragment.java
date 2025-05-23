@@ -35,6 +35,7 @@ import com.project.wishify.adapters.BirthdayAdapter;
 import com.project.wishify.classes.Birthday;
 import com.project.wishify.receivers.BirthdayReminderReceiver;
 import com.project.wishify.receivers.MessageNotificationReceiver;
+import com.project.wishify.receivers.TextMessageNotificationReceiver;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -240,7 +241,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void scheduleMessageNotification(Birthday birthday, String message) {
-        Intent intent = new Intent(getContext(), MessageNotificationReceiver.class);
+        Intent intent = new Intent(getContext(), TextMessageNotificationReceiver.class);
         intent.putExtra("name", birthday.getName());
         intent.putExtra("message", message);
         intent.putExtra("phoneNumber", birthday.getPhoneNumber());
@@ -302,7 +303,7 @@ public class HomeFragment extends Fragment {
 
         Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.YEAR, year);
-        calendar.set(Calendar.MONTH, month - 1); // 0-based
+        calendar.set(Calendar.MONTH, month - 1);
         calendar.set(Calendar.DAY_OF_MONTH, day);
         calendar.set(Calendar.HOUR_OF_DAY, 9);
         calendar.set(Calendar.MINUTE, 0);

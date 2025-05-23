@@ -38,12 +38,20 @@
         <receiver android:name=".receivers.BirthdayReminderReceiver"
             android:exported="true">
         </receiver>
+
         <receiver
             android:name=".receivers.MessageNotificationReceiver"
             android:exported="false" />
+
         <receiver
-            android:name=".receivers.MessageNotificationReceiver"
+            android:name=".receivers.TextMessageNotificationReceiver"
             android:exported="false" />
+
+
+        <activity
+            android:name=".activities.TextMessagePreviewActivity"
+            android:exported="false" />
+
         <activity
             android:name=".activities.MessagePreviewActivity"
             android:exported="true" />

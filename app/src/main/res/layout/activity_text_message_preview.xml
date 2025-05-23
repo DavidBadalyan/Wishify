@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="16dp"
+    android:background="@drawable/background_image_main">
+
+    <EditText
+        android:id="@+id/et_message_preview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="200dp"
+        android:gravity="top|start"
+        android:hint="Edit your birthday wish here"
+        android:background="@drawable/white_rounded_et"
+        android:padding="12dp"
+        android:textSize="16sp"
+        android:textColorHint="@android:color/white"
+        android:layout_marginBottom="16dp"
+        android:layout_gravity="center" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_share"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Share"
+        android:textColor="#FFFFFF"
+        android:background="@drawable/button_gradient"
+        android:paddingHorizontal="24dp"
+        android:paddingVertical="12dp"
+        android:textSize="16sp"
+        android:layout_gravity="center" />
+
+</LinearLayout>
