@@ -186,7 +186,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
 
             if (context != null) {
                 try {
-                    setBirthdayReminder(context, name, Integer.parseInt(day), parsedMonth, year, currentBirthday.getId());
+                    setBirthdayReminder(context, name, Integer.parseInt(day), parsedMonth, year);
                     Toast.makeText(context, "Reminder set for " + name, Toast.LENGTH_SHORT).show();
                 } catch (Exception e) {
                     Log.e("Reminder", "Error setting reminder: " + e.getMessage(), e);
@@ -262,16 +262,16 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
         }
     }
 
-    public void setBirthdayReminder(Context context, String name, int day, int month, int year, String birthdayId) {
+    public void setBirthdayReminder(Context context, String name, int day, int month, int year) {
         Log.d("Reminder", "setBirthdayReminder called with: " + name + ", " + day + "-" + month + "-" + year);
 
         Intent intent = new Intent(context, BirthdayReminderReceiver.class);
         intent.putExtra("name", name);
-        intent.putExtra("notificationId", birthdayId.hashCode());
+        intent.putExtra("notificationId", name.hashCode());
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 context,
-                birthdayId.hashCode(),
+                name.hashCode(),
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
