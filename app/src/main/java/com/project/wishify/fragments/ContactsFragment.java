@@ -72,7 +72,7 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
     private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent";
     private static final String GEMINI_API_KEY = "AIzaSyA134vyOKrkVZf6Q_gW05G_YmYrNYenDhY";
     private static final String D_ID_API_URL = "https://api.d-id.com/talks";
-    private static final String D_ID_API_KEY = "ZGF2aWQxY29kemlsbGFAZ21haWwuY29t:vKlIdDhtwpCv0-HF-6vf_";
+    private static final String D_ID_API_KEY = "c3ZldDI3bGFuYUBnbWFpbC5jb20:M2ysEjFlDZXwpAD95Xui6";
     private static final int MAX_RETRIES = 3;
 
     @Override
