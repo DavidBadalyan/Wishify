@@ -2,11 +2,14 @@ package com.project.wishify.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.AppCompatButton;
+import androidx.appcompat.widget.Toolbar;
 
 import com.project.wishify.R;
 
@@ -22,16 +25,23 @@ public class TextMessagePreviewActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_text_message_preview);
 
+        AppCompatButton back = findViewById(R.id.back);
+        back.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(TextMessagePreviewActivity.this, MainActivity.class);
+                startActivity(intent);
+            }
+        });
+
         etMessage = findViewById(R.id.et_message_preview);
         btnShare = findViewById(R.id.btn_share);
 
-        // Retrieve data from intent
         Intent intent = getIntent();
         name = intent.getStringExtra("name");
         message = intent.getStringExtra("message");
         phoneNumber = intent.getStringExtra("phoneNumber");
 
-        // Set the message in EditText
         if (message != null) {
             etMessage.setText(message);
         } else {
@@ -39,7 +49,6 @@ public class TextMessagePreviewActivity extends AppCompatActivity {
             Toast.makeText(this, "No message found", Toast.LENGTH_SHORT).show();
         }
 
-        // Set the activity title
         if (name != null) {
             setTitle("Birthday Wish for " + name);
         }

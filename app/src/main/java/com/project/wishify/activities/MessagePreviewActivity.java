@@ -10,6 +10,7 @@ import android.widget.VideoView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.FileProvider;
 
 import com.project.wishify.R;
@@ -25,6 +26,15 @@ public class MessagePreviewActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_message_preview);
+
+        AppCompatButton back = findViewById(R.id.back);
+        back.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MessagePreviewActivity.this, MainActivity.class);
+                startActivity(intent);
+            }
+        });
 
         TextView tvTitle = findViewById(R.id.tv_title);
         TextView tvMessage = findViewById(R.id.tv_message);

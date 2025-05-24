@@ -1,36 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
     android:padding="16dp"
     android:background="@drawable/background_image_main">
 
-    <EditText
-        android:id="@+id/et_message_preview"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="200dp"
-        android:gravity="top|start"
-        android:hint="Edit your birthday wish here"
-        android:background="@drawable/white_rounded_et"
-        android:padding="12dp"
-        android:textSize="16sp"
-        android:textColorHint="@android:color/white"
-        android:layout_marginBottom="16dp"
-        android:layout_gravity="center" />
-
     <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btn_share"
+        android:id="@+id/back"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Share"
-        android:textColor="#FFFFFF"
+        android:layout_gravity="center_horizontal"
         android:background="@drawable/button_gradient"
-        android:paddingHorizontal="24dp"
-        android:paddingVertical="12dp"
-        android:textSize="16sp"
-        android:layout_gravity="center" />
+        android:backgroundTint="@null"
+        android:text="Back"
+        android:textAllCaps="false"
+        android:textColor="#FFFFFF"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-</LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/back">
+
+        <EditText
+            android:id="@+id/et_message_preview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/white_rounded_et"
+            android:gravity="top|start"
+            android:hint="Edit your birthday wish here"
+            android:minHeight="200dp"
+            android:padding="12dp"
+            android:textColorHint="@android:color/white"
+            android:textSize="16sp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_share"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/button_gradient"
+            android:paddingHorizontal="24dp"
+            android:paddingVertical="12dp"
+            android:text="Share"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
