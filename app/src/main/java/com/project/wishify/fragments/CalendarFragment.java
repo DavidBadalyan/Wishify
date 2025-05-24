@@ -2,10 +2,12 @@ package com.project.wishify.fragments;
 
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -147,6 +149,10 @@ public class CalendarFragment extends Fragment {
         AlertDialog dialog = builder.create();
 
         btnAddBirthday.setOnClickListener(v -> {
+            if(isKeyboardOpen()) {
+                closeKeyboard();
+            }
+
             if (auth.getCurrentUser() == null) {
                 Toast.makeText(requireContext(), "Please log in to add birthdays", Toast.LENGTH_SHORT).show();
                 dialog.dismiss();
@@ -169,6 +175,23 @@ public class CalendarFragment extends Fragment {
 
         dialog.show();
     }
+
+    private boolean isKeyboardOpen() {
+        InputMethodManager imm = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+        return imm != null && imm.isAcceptingText();
+    }
+
+    private void closeKeyboard() {
+        InputMethodManager imm = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            View view = requireActivity().getCurrentFocus();
+            if (view == null) {
+                view = new View(requireContext());
+            }
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+    }
+
 
     private void showDatePickerDialog(TextView tvBirthday) {
         Calendar calendar = Calendar.getInstance();
