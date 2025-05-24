@@ -301,43 +301,70 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
     }
 
     private void deleteBirthday(Context context, Birthday birthday, int position) {
-        if (birthday == null || birthday.getName() == null || birthday.getId() == null) {
-            Log.e(TAG, "Cannot delete birthday: birthday, name, or id is null at position " + position);
+        if (birthday == null || birthday.getName() == null || birthday.getDate() == null) {
+            Log.e(TAG, "Cannot delete birthday: birthday, name, or date is null at position " + position);
+            Toast.makeText(context, "Cannot delete: invalid birthday data", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        // Store the birthday for potential rollback
+        Birthday deletedBirthday = new Birthday(null, birthday.getName(), birthday.getDate(), birthday.getPhoneNumber());
+
+        // Immediately remove from both lists for instant UI update
+        filteredBirthdayList.remove(position);
+        originalBirthdayList.removeIf(b -> b.getName() != null && b.getName().equals(birthday.getName()) &&
+                b.getDate() != null && b.getDate().equals(birthday.getDate()));
+
+        // Update RecyclerView immediately
+        notifyItemRemoved(position);
+        notifyDataSetChanged();
+        resetSwipe();
+
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         databaseReference = FirebaseDatabase.getInstance().getReference("users").child(userId).child("birthdays");
+
+        // Query to find the exact birthday entry in Firebase by name and date
         databaseReference.orderByChild("name").equalTo(birthday.getName()).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 boolean deleted = false;
                 for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
                     Birthday dbBirthday = dataSnapshot.getValue(Birthday.class);
-                    if (dbBirthday != null && dbBirthday.getDate() != null && dbBirthday.getDate().equals(birthday.getDate()) && dbBirthday.getId().equals(birthday.getId())) {
+                    if (dbBirthday != null && dbBirthday.getDate() != null &&
+                            dbBirthday.getDate().equals(birthday.getDate()) &&
+                            dbBirthday.getName().equals(birthday.getName())) {
+
+                        // Delete from Firebase
                         dataSnapshot.getRef().removeValue((error, ref) -> {
                             if (error == null) {
+                                // Cancel associated alarm
                                 AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
                                 Intent intent = new Intent(context, BirthdayReminderReceiver.class);
-                                PendingIntent pendingIntent = PendingIntent.getBroadcast(context, birthday.getId().hashCode(), intent,
-                                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                                PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                                        context,
+                                        birthday.getName().hashCode(),
+                                        intent,
+                                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                                );
                                 if (alarmManager != null) {
                                     alarmManager.cancel(pendingIntent);
                                 }
 
+                                // Remove reminder from SharedPreferences
                                 SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
                                 SharedPreferences.Editor editor = prefs.edit();
-                                editor.remove(REMINDER_KEY + birthday.getId().hashCode());
+                                editor.remove(REMINDER_KEY + birthday.getName().hashCode());
                                 editor.apply();
 
-                                filteredBirthdayList.remove(position);
-                                notifyItemRemoved(position);
-                                notifyDataSetChanged();
                                 Toast.makeText(context, "Birthday deleted", Toast.LENGTH_SHORT).show();
                                 Log.d(TAG, "Deleted birthday: " + birthday.getName());
-                                resetSwipe();
                             } else {
-                                Toast.makeText(context, "Failed to delete birthday", Toast.LENGTH_SHORT).show();
+                                // Rollback UI changes if Firebase deletion fails
+                                filteredBirthdayList.add(position, deletedBirthday);
+                                originalBirthdayList.add(deletedBirthday);
+                                notifyItemInserted(position);
+                                notifyDataSetChanged();
+                                Toast.makeText(context, "Failed to delete birthday: " + error.getMessage(), Toast.LENGTH_SHORT).show();
                                 Log.e(TAG, "Failed to delete birthday: " + error.getMessage());
                             }
                         });
@@ -346,12 +373,23 @@ public class ContactsAdapter extends RecyclerView.Adapter<ContactsAdapter.Contac
                     }
                 }
                 if (!deleted) {
-                    Log.w(TAG, "No matching birthday found to delete for name: " + birthday.getName() + ", id: " + birthday.getId());
+                    // Rollback UI changes if no matching birthday found
+                    filteredBirthdayList.add(position, deletedBirthday);
+                    originalBirthdayList.add(deletedBirthday);
+                    notifyItemInserted(position);
+                    notifyDataSetChanged();
+                    Log.w(TAG, "No matching birthday found to delete for name: " + birthday.getName() + ", date: " + birthday.getDate());
+                    Toast.makeText(context, "Birthday not found in database", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
+                // Rollback UI changes on database error
+                filteredBirthdayList.add(position, deletedBirthday);
+                originalBirthdayList.add(deletedBirthday);
+                notifyItemInserted(position);
+                notifyDataSetChanged();
                 Toast.makeText(context, "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
                 Log.e(TAG, "Database error on delete: " + error.getMessage());
             }
