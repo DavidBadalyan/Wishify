@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="card_width">560dp</dimen>
+    <dimen name="button_width">560dp</dimen>
+    <dimen name="button_height">56dp</dimen>
+    <dimen name="recycler_width">560dp</dimen>
+    <dimen name="recycler_height_max">400dp</dimen>
+    <dimen name="edit_text_width">560dp</dimen>
+    <dimen name="edit_text_height">48dp</dimen>
+    <dimen name="title_text_size">36sp</dimen>
+    <dimen name="button_text_size">18sp</dimen>
+    <dimen name="margin_small">12dp</dimen>
+    <dimen name="margin_medium">16dp</dimen>
+    <dimen name="margin_large">20dp</dimen>
+</resources>
