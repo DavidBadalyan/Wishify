@@ -20,6 +20,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.Toast;
 
@@ -183,6 +184,8 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
         Spinner spinnerCelebrity = dialogView.findViewById(R.id.spinner_celebrity);
         Button cancelButton = dialogView.findViewById(R.id.cancel_button);
         Button scheduleButton = dialogView.findViewById(R.id.schedule_button);
+        ProgressBar progressBar = dialogView.findViewById(R.id.progress_bar);
+
         etMessage.setText("Generating wish...");
         generateAIWish(birthday.getName(), new WishCallback() {
             @Override
@@ -217,9 +220,17 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                 Toast.makeText(getContext(), "Please select a celebrity", Toast.LENGTH_SHORT).show();
                 return;
             }
+            // Show ProgressBar and disable buttons
+            progressBar.setVisibility(View.VISIBLE);
+            scheduleButton.setEnabled(false);
+            cancelButton.setEnabled(false);
             Toast.makeText(getContext(), "Generating video...", Toast.LENGTH_SHORT).show();
             generateVideoFile(message, selectedCelebrity, videoFile -> {
                 requireActivity().runOnUiThread(() -> {
+                    // Hide ProgressBar and re-enable buttons
+                    progressBar.setVisibility(View.GONE);
+                    scheduleButton.setEnabled(true);
+                    cancelButton.setEnabled(true);
                     if (videoFile != null) {
                         scheduleMessageNotification(birthday, videoFile.getAbsolutePath());
                         Toast.makeText(getContext(), "Video wish scheduled for " + birthday.getName() + " on " + birthday.getDate(), Toast.LENGTH_SHORT).show();
