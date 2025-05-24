@@ -1,6 +1,7 @@
 package com.project.wishify.activities;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
@@ -31,10 +32,16 @@ public class MainActivity extends AppCompatActivity {
     private AppCompatButton settingsButton;
     private FirebaseAuth auth;
     private static final String TAG = "MainActivity";
+    private SharedPreferences sharedPreferences;
+    private static final String PREF_NAME = "WishifyPrefs";
+    private static final String KEY_REMEMBER_ME = "rememberMe";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
+
         try {
             FirebaseApp.initializeApp(this);
             auth = FirebaseAuth.getInstance();
@@ -50,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
             FirebaseUser currentUser = auth.getCurrentUser();
             if (currentUser == null) {
                 Log.d(TAG, "No user signed in, redirecting to LoginActivity");
-                goToLoginActivity();
+                goToStartActivity();
                 return;
             }
 
@@ -78,9 +85,12 @@ public class MainActivity extends AppCompatActivity {
                 } else if (id == R.id.nav_logout) {
                     try {
                         Log.d(TAG, "Logging out user");
+                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                        editor.putBoolean(KEY_REMEMBER_ME, false);
+                        editor.apply();
                         cleanupBeforeLogout();
                         auth.signOut();
-                        goToLoginActivity();
+                        goToStartActivity();
                     } catch (Exception e) {
                         Toast.makeText(this, "Logout failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
                         Log.e(TAG, "Logout error: " + e.getMessage(), e);
@@ -131,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.e(TAG, "Crash in onCreate: " + e.getMessage(), e);
             Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            goToLoginActivity();
+            goToStartActivity();
         }
     }
 
@@ -148,10 +158,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void goToLoginActivity() {
+    private void goToStartActivity() {
         try {
             Log.d(TAG, "Navigating to LoginActivity");
-            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+            Intent intent = new Intent(MainActivity.this, StartActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
             finish();
