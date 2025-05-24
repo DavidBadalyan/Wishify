@@ -388,29 +388,36 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
             return;
         }
 
-        // Map celebrities to different source_url images
+        String voiceId;
         String sourceUrl;
         switch (celebrity.toLowerCase()) {
             case "noelle":
                 sourceUrl = "https://create-images-results.d-id.com/api_docs/assets/noelle.jpeg";
+                voiceId = "en-US-JennyNeural";
                 break;
             case "bull":
                 sourceUrl = "https://create-images-results.d-id.com/DefaultPresenters/Bull_m/image.png";
+                voiceId = "en-US-GuyNeural";
                 break;
             case "emma":
                 sourceUrl = "https://create-images-results.d-id.com/DefaultPresenters/Emma_f/image.png";
+                voiceId = "en-US-AriaNeural";
                 break;
             case "william":
                 sourceUrl = "https://create-images-results.d-id.com/DefaultPresenters/William_m/image.png";
+                voiceId = "en-US-BrandonNeural";
                 break;
             case "santa":
                 sourceUrl = "https://create-images-results.d-id.com/DefaultPresenters/FriendlySanta/image.jpg";
+                voiceId = "en-US-DavisNeural";
                 break;
             case "sara":
                 sourceUrl = "https://create-images-results.d-id.com/DefaultPresenters/Sara_f/image.png";
+                voiceId = "en-US-SaraNeural";
                 break;
             default:
                 sourceUrl = "https://create-images-results.d-id.com/api_docs/assets/noelle.jpeg";
+                voiceId = "en-US-JennyNeural";
                 break;
         }
         Log.d(TAG, "Selected celebrity: " + celebrity + ", source_url: " + sourceUrl);
@@ -422,7 +429,7 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                     .put("input", message)
                     .put("provider", new JSONObject()
                             .put("type", "microsoft")
-                            .put("voice_id", "en-US-JennyNeural")));
+                            .put("voice_id", voiceId)));
             json.put("source_url", sourceUrl);
             Log.d(TAG, "Video Request JSON: " + json.toString());
         } catch (JSONException e) {
