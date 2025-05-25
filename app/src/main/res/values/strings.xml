@@ -8,4 +8,6 @@
         <item>Audio</item>
         <item>Video</item>
     </string-array>
+
+    <string name="avatar_image">Celebrity Avatar</string>
 </resources>

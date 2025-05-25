@@ -55,6 +55,7 @@ dependencies {
     implementation("androidx.work:work-runtime:2.8.1")
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
     implementation("org.json:json:20231013")
+    implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)

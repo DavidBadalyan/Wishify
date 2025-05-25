@@ -37,6 +37,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.project.wishify.R;
 import com.project.wishify.adapters.ContactsAdapter;
+import com.project.wishify.adapters.CustomSpinnerAdapter;
 import com.project.wishify.classes.Birthday;
 import com.project.wishify.receivers.MessageNotificationReceiver;
 
@@ -200,13 +201,26 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                 });
             }
         });
-        ArrayAdapter<CharSequence> celebrityAdapter = ArrayAdapter.createFromResource(
+
+        // In showScheduleMessageDialog
+        String[] avatarUrls = {
+                "https://create-images-results.d-id.com/api_docs/assets/noelle.jpeg",
+                "https://create-images-results.d-id.com/DefaultPresenters/Bull_m/image.png",
+                "https://create-images-results.d-id.com/DefaultPresenters/Emma_f/image.png",
+                "https://create-images-results.d-id.com/DefaultPresenters/William_m/image.png",
+                "https://create-images-results.d-id.com/DefaultPresenters/FriendlySanta/image.jpg",
+                "https://create-images-results.d-id.com/DefaultPresenters/Sara_f/image.png"
+        };
+
+        String[] celebrities = getResources().getStringArray(R.array.celebrity_list);
+        CustomSpinnerAdapter celebrityAdapter = new CustomSpinnerAdapter(
                 requireContext(),
-                R.array.celebrity_list,
-                android.R.layout.simple_spinner_item
+                celebrities,
+                avatarUrls
         );
-        celebrityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        celebrityAdapter.setDropDownViewResource(R.layout.spinner_item_celebrity);
         spinnerCelebrity.setAdapter(celebrityAdapter);
+
         AlertDialog dialog = builder.create();
         cancelButton.setOnClickListener(v -> dialog.dismiss());
         scheduleButton.setOnClickListener(v -> {
@@ -216,7 +230,7 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
                 Toast.makeText(getContext(), "Please enter a message", Toast.LENGTH_SHORT).show();
                 return;
             }
-            if (selectedCelebrity.equals("Select a celebrity")) {
+            if (selectedCelebrity.equals("Select an avatar")) {
                 Toast.makeText(getContext(), "Please select a celebrity", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -227,7 +241,6 @@ public class ContactsFragment extends Fragment implements ContactsAdapter.OnCust
             Toast.makeText(getContext(), "Generating video...", Toast.LENGTH_SHORT).show();
             generateVideoFile(message, selectedCelebrity, videoFile -> {
                 requireActivity().runOnUiThread(() -> {
-                    // Hide ProgressBar and re-enable buttons
                     progressBar.setVisibility(View.GONE);
                     scheduleButton.setEnabled(true);
                     cancelButton.setEnabled(true);
