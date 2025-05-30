@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -149,9 +150,7 @@ public class CalendarFragment extends Fragment {
         AlertDialog dialog = builder.create();
 
         btnAddBirthday.setOnClickListener(v -> {
-            if(isKeyboardOpen()) {
-                closeKeyboard();
-            }
+            closeKeyboard(dialogView); // Pass the dialog's root view
 
             if (auth.getCurrentUser() == null) {
                 Toast.makeText(requireContext(), "Please log in to add birthdays", Toast.LENGTH_SHORT).show();
@@ -167,7 +166,7 @@ public class CalendarFragment extends Fragment {
                     return;
                 }
                 addBirthdayToFirebase(name, selectedDate, phone);
-                dialog.dismiss();
+                new android.os.Handler(Looper.getMainLooper()).postDelayed(dialog::dismiss, 100);
             } else {
                 Toast.makeText(requireContext(), "Please fill all fields", Toast.LENGTH_SHORT).show();
             }
@@ -181,14 +180,10 @@ public class CalendarFragment extends Fragment {
         return imm != null && imm.isAcceptingText();
     }
 
-    private void closeKeyboard() {
+    private void closeKeyboard(View dialogView) {
         InputMethodManager imm = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-        if (imm != null) {
-            View view = requireActivity().getCurrentFocus();
-            if (view == null) {
-                view = new View(requireContext());
-            }
-            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        if (imm != null && dialogView != null) {
+            imm.hideSoftInputFromWindow(dialogView.getWindowToken(), 0);
         }
     }
 
